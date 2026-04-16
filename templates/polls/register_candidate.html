@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Candidate - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-heart me-2"></i>Register New Candidate
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Force Number *</label>
+                            <input type="number" name="force_number" class="form-control" min="62800" max="73500" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Rank *</label>
+                            <select name="rank" class="form-select" required>
+                                <option value="">Select Rank</option>
+                                <option value="CONSTABLE">Constable</option>
+                                <option value="CORPORAL">Corporal</option>
+                                <option value="SERGEANT">Sergeant</option>
+                                <option value="INSPECTOR">Inspector</option>
+                                <option value="ASP">Assistant SP</option>
+                                <option value="SP">Superintendent</option>
+                                <option value="SSP">Senior SP</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Election *</label>
+                            <select name="election" class="form-select" required>
+                                <option value="">Select Election</option>
+                                {% for election in elections %}
+                                    <option value="{{ election.id }}">{{ election.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Position *</label>
+                            <select name="position" class="form-select" required>
+                                <option value="">Select Position</option>
+                                {% for position in positions %}
+                                    <option value="{{ position.id }}">{{ position.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Photo</label>
+                            <input type="file" name="photo" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Biography / Manifesto</label>
+                            <textarea name="biography" class="form-control" rows="4" placeholder="Enter candidate's biography or manifesto"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-info btn-lg flex-grow-1">
+                            <i class="bi bi-check-circle"></i> Register Candidate
+                        </button>
+                        <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

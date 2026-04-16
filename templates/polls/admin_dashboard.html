@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-gear me-2 text-warning"></i>
+                Admin Dashboard
+            </h1>
+            <a href="{% url 'polls:index' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-house"></i> Voter View
+            </a>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <a href="{% url 'polls:admin_positions' %}" class="text-decoration-none">
+                    <div class="card h-100 border-start border-primary border-4 hover-shadow">
+                        <div class="card-body text-center">
+                            <i class="bi bi-building fs-1 text-primary mb-3"></i>
+                            <h5 class="card-title">Positions</h5>
+                            <p class="card-text text-muted">Election categories</p>
+                            <span class="badge bg-primary">{{ positions_count|default:0 }}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'polls:admin_elections' %}" class="text-decoration-none">
+                    <div class="card h-100 border-start border-success border-4 hover-shadow">
+                        <div class="card-body text-center">
+                            <i class="bi bi-calendar-check fs-1 text-success mb-3"></i>
+                            <h5 class="card-title">Elections</h5>
+                            <p class="card-text text-muted">Manage elections</p>
+                            <span class="badge bg-success">{{ active_elections|default:0 }} active</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'polls:admin_candidates' %}" class="text-decoration-none">
+                    <div class="card h-100 border-start border-info border-4 hover-shadow">
+                        <div class="card-body text-center">
+                            <i class="bi bi-person-heart fs-1 text-info mb-3"></i>
+                            <h5 class="card-title">Candidates</h5>
+                            <p class="card-text text-muted">Manage candidates</p>
+                            <span class="badge bg-info">{{ candidates_count|default:0 }}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'polls:admin_voters' %}" class="text-decoration-none">
+                    <div class="card h-100 border-start border-warning border-4 hover-shadow">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-person fs-1 text-warning mb-3"></i>
+                            <h5 class="card-title">Voters</h5>
+                            <p class="card-text text-muted">Manage voters</p>
+                            <span class="badge bg-warning">{{ voters_count|default:0 }}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-lightning me-2 text-success"></i>Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <a href="{% url 'polls:create_election' %}" class="btn btn-success w-100 py-3">
+                                    <i class="bi bi-plus-circle d-block fs-4 mb-2"></i>
+                                    Create Election
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="{% url 'polls:admin_register_candidate' %}" class="btn btn-info w-100 py-3">
+                                    <i class="bi bi-person-plus d-block fs-4 mb-2"></i>
+                                    Register Candidate
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="{% url 'polls:admin_register_voter' %}" class="btn btn-warning w-100 py-3">
+                                    <i class="bi bi-shield-plus d-block fs-4 mb-2"></i>
+                                    Register Voter
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="/admin/" class="btn btn-secondary w-100 py-3">
+                                    <i class="bi bi-gear-wide-connected d-block fs-4 mb-2"></i>
+                                    Super Admin
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">System Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3 mb-3">
+                                <h2 class="text-primary">{{ positions_count|default:0 }}</h2>
+                                <p class="mb-0 text-muted">Positions</p>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <h2 class="text-success">{{ elections_count|default:0 }}</h2>
+                                <p class="mb-0 text-muted">Total Elections</p>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <h2 class="text-info">{{ candidates_count|default:0 }}</h2>
+                                <p class="mb-0 text-muted">Candidates</p>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <h2 class="text-warning">{{ voters_count|default:0 }}</h2>
+                                <p class="mb-0 text-muted">Registered Voters</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}

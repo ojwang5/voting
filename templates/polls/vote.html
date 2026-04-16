@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vote - {{ election.title }} - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        {% if has_voted %}
+            <div class="alert alert-warning text-center">
+                <i class="bi bi-exclamation-triangle fs-1 d-block mb-3"></i>
+                <h4>You Have Already Voted in This Election</h4>
+                <p>Each voter can only cast one vote per election.</p>
+                <a href="{% url 'polls:results' election.id %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-bar-chart"></i> View Results
+                </a>
+            </div>
+        {% else %}
+            <div class="text-center mb-4">
+                <h1 class="display-6 fw-bold mb-3">{{ election.title }}</h1>
+                {% if election.description %}
+                    <p class="lead text-muted mb-4">{{ election.description }}</p>
+                {% endif %}
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <i class="bi bi-play-circle me-1 text-success"></i>
+                                    <strong>Start:</strong><br>
+                                    <small>{{ election.start_time|date:"M d, Y H:i" }}</small>
+                                </div>
+                                <div class="col-6">
+                                    <i class="bi bi-stop-circle me-1 text-danger"></i>
+                                    <strong>End:</strong><br>
+                                    <small>{{ election.end_time|date:"M d, Y H:i" }}</small>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="countdown-timer" data-end="{{ election.end_time.isoformat }}" data-id="{{ election.id }}">
+                                <i class="bi bi-clock me-1"></i>
+                                <strong id="timer-{{ election.id }}">Loading...</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people me-2"></i>
+                        Select Your Candidate ({{ candidates.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row g-4">
+                            {% for candidate in candidates %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="candidate-card h-100">
+                                        {% if candidate.photo %}
+                                            <img src="{{ candidate.photo.url }}" alt="{{ candidate.name }}" class="candidate-photo">
+                                        {% else %}
+                                            <div class="candidate-placeholder">
+                                                <i class="bi bi-person-circle display-4 text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div class="card-body text-center p-4">
+                                            <h5 class="fw-bold mb-2">{{ candidate.name }}</h5>
+                                            <p class="text-muted mb-1">
+                                                <span class="badge bg-secondary">{{ candidate.rank }}</span>
+                                            </p>
+                                            <p class="text-muted small mb-0">
+                                                <i class="bi bi-hash"></i> Force #{{ candidate.force_number }}
+                                            </p>
+                                            <p class="badge bg-info mb-3">{{ candidate.position.name }}</p>
+                                            {% if candidate.biography %}
+                                                <hr class="my-3">
+                                                <p class="small text-muted text-start">{{ candidate.biography|truncatewords:20 }}</p>
+                                            {% endif %}
+                                            <div class="form-check mt-3">
+                                                <input class="form-check-input" type="radio" name="candidate" 
+                                                       id="candidate_{{ candidate.id }}" value="{{ candidate.id }}" required>
+                                                <label class="form-check-label w-100 p-3 border rounded cursor-pointer vote-label" 
+                                                       for="candidate_{{ candidate.id }}">
+                                                    <strong>Vote for {{ candidate.name }}</strong>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="col-12">
+                                    <div class="text-center py-5">
+                                        <i class="bi bi-exclamation-triangle display-1 text-warning mb-4"></i>
+                                        <h4>No candidates available for this election.</h4>
+                                        <p class="text-muted">Please contact an administrator.</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if candidates %}
+                            <div class="text-center mt-5">
+                                <button type="submit" class="btn btn-success btn-lg px-6 py-3">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    Submit Vote
+                                </button>
+                                <p class="text-muted mt-2 small">
+                                    <i class="bi bi-info-circle"></i> Your vote is final and cannot be changed once submitted.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{% url 'polls:index' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateTimer() {
+    document.querySelectorAll('.countdown-timer').forEach(function(timer) {
+        const id = timer.dataset.id;
+        const end = timer.dataset.end;
+        const display = document.getElementById('timer-' + id);
+        if (!display || !end) return;
+        
+        const targetTime = new Date(end);
+        const now = new Date();
+        const diff = targetTime - now;
+        
+        if (diff <= 0) {
+            display.textContent = 'Voting Closed!';
+            location.reload();
+            return;
+        }
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        if (days > 0) {
+            display.textContent = 'Closes in: ' + days + 'd ' + hours + 'h ' + minutes + 'm';
+        } else if (hours > 0) {
+            display.textContent = 'Closes in: ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
+        } else {
+            display.textContent = 'Closes in: ' + minutes + 'm ' + seconds + 's';
+        }
+    });
+}
+
+updateTimer();
+setInterval(updateTimer, 1000);
+</script>
+{% endblock %}

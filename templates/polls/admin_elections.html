@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Elections - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-calendar-check me-2 text-success"></i>
+                Election Management
+            </h1>
+            <div>
+                <a href="{% url 'polls:create_election' %}" class="btn btn-success me-2">
+                    <i class="bi bi-plus-circle"></i> Create Election
+                </a>
+                <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">All Elections ({{ elections.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if elections %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Election</th>
+                                    <th>Positions</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Candidates</th>
+                                    <th>Votes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for election in elections %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ election.title }}</strong>
+                                        {% if election.description %}
+                                            <br><small class="text-muted">{{ election.description|truncatewords:8 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for pos in election.positions.all %}
+                                            <span class="badge bg-info mb-1">{{ pos.name }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <i class="bi bi-play text-success"></i> {{ election.start_time|date:"M d, Y H:i" }}
+                                            <br>
+                                            <i class="bi bi-stop text-danger"></i> {{ election.end_time|date:"M d, Y H:i" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if election.status == 'ACTIVE' %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% elif election.status == 'UPCOMING' %}
+                                            <span class="badge bg-warning">Upcoming</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Ended</span>
+                                        {% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ election.time_remaining }}</small>
+                                    </td>
+                                    <td><span class="badge bg-primary">{{ election.candidates.count }}</span></td>
+                                    <td><span class="badge bg-dark">{{ election.vote_set.count }}</span></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'polls:edit_election' election.id %}" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            <a href="{% url 'polls:results' election.id %}" class="btn btn-outline-success" title="View Results">
+                                                <i class="bi bi-bar-chart"></i>
+                                            </a>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-download"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li><a class="dropdown-item" href="{% url 'polls:export_results_csv' election.id %}">
+                                                        <i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'polls:export_results_pdf' election.id %}">
+                                                        <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+                                                    </a></li>
+                                                    <li><a class="dropdown-item" href="{% url 'polls:export_results_docx' election.id %}">
+                                                        <i class="bi bi-file-earmark-word me-2"></i>DOCX
+                                                    </a></li>
+                                                </ul>
+                                            </div>
+                                            <a href="{% url 'polls:toggle_election_status' election.id %}" class="btn btn-outline-{% if election.is_active %}warning{% else %}success{% endif %}" title="{% if election.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                                <i class="bi bi-{% if election.is_active %}pause{% else %}play{% endif %}"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x display-4 text-muted mb-3"></i>
+                        <h5 class="text-muted">No elections created yet</h5>
+                        <a href="{% url 'polls:create_election' %}" class="btn btn-success btn-lg">
+                            <i class="bi bi-plus-circle"></i> Create Election
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

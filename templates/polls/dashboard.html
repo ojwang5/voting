@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-speedometer2 me-2 text-primary"></i>
+                Voter Dashboard
+            </h1>
+            <div>
+                {% if is_admin %}
+                    <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-warning me-2">
+                        <i class="bi bi-gear"></i> Admin Panel
+                    </a>
+                {% endif %}
+                <form method="post" action="/polls/accounts/logout/" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card border-start border-primary border-4">
+                    <div class="card-body">
+                        <h6 class="card-title text-primary mb-2">
+                            <i class="bi bi-person-badge me-2"></i>Profile
+                        </h6>
+                        <p class="mb-1"><strong>Force #:</strong> {{ user_profile.force_number }}</p>
+                        <p class="mb-1"><strong>Rank:</strong> {{ user_profile.get_rank_display }}</p>
+                        <p class="mb-1"><strong>Station:</strong> {{ user_profile.station }}</p>
+                        <p class="mb-0"><strong>Role:</strong> 
+                            <span class="badge bg-{% if user_profile.role == 'SUPER_ADMIN' %}danger{% elif user_profile.role == 'ADMIN' %}warning{% else %}success{% endif %}">
+                                {{ user_profile.get_role_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-start border-success border-4">
+                    <div class="card-body">
+                        <h6 class="card-title text-success mb-3">
+                            <i class="bi bi-check-circle me-2"></i>Voting Stats
+                        </h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Elections Participated:</span>
+                            <span class="badge bg-primary">{{ total_votes_cast }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Active Elections:</span>
+                            <span class="badge bg-success">{{ active_elections.count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Upcoming:</span>
+                            <span class="badge bg-warning">{{ upcoming_elections.count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-start border-info border-4">
+                    <div class="card-body">
+                        <h6 class="card-title text-info mb-3">
+                            <i class="bi bi-trophy me-2"></i>Your Votes
+                        </h6>
+                        {% if user_votes %}
+                            {% for uv in user_votes %}
+                                <div class="d-flex justify-content-between mb-1 small">
+                                    <span>{{ uv.election.title|truncatechars:20 }}</span>
+                                    <span class="badge bg-success">Voted</span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small mb-0">No votes cast yet</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if active_elections %}
+            <div class="card mb-4 border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightning me-2"></i>
+                        Active Elections ({{ active_elections.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        {% for election in active_elections %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100 {% if election.id in voted_elections %}border-warning{% endif %}">
+                                    {% if election.id in voted_elections %}
+                                        <div class="card-header bg-warning text-dark">
+                                            <i class="bi bi-check-circle me-1"></i> You voted in this election
+                                        </div>
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold text-primary mb-2">{{ election.title }}</h6>
+                                        <p class="card-text text-muted small mb-2">{{ election.description|truncatewords:10 }}</p>
+                                        <div class="mb-2">
+                                            {% for pos in election.positions.all %}
+                                                <span class="badge bg-info mb-1">{{ pos.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="countdown-timer" data-end="{{ election.end_time.isoformat }}" data-id="{{ election.id }}">
+                                            <small class="text-muted"><i class="bi bi-clock"></i> Closes in: <span id="timer-{{ election.id }}">--</span></small>
+                                        </div>
+                                        <hr>
+                                        {% if election.id in voted_elections %}
+                                            <a href="{% url 'polls:results' election.id %}" class="btn btn-warning w-100">
+                                                <i class="bi bi-bar-chart"></i> View Results
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'polls:vote' election.id %}" class="btn btn-success w-100">
+                                                <i class="bi bi-check-lg"></i> Vote Now
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if upcoming_elections %}
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-event me-2"></i>
+                        Upcoming Elections ({{ upcoming_elections.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        {% for election in upcoming_elections %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold text-warning mb-2">{{ election.title }}</h6>
+                                        <p class="card-text text-muted small mb-2">{{ election.description|truncatewords:10 }}</p>
+                                        <div class="mb-2">
+                                            {% for pos in election.positions.all %}
+                                                <span class="badge bg-info mb-1">{{ pos.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="countdown-timer" data-start="{{ election.start_time.isoformat }}" data-id="{{ election.id }}">
+                                            <small class="text-muted"><i class="bi bi-clock"></i> Starts in: <span id="timer-{{ election.id }}">--</span></small>
+                                        </div>
+                                        <hr>
+                                        <div class="alert alert-warning py-2 mb-0 small">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Opens: {{ election.start_time|date:"M d, Y H:i" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if ended_elections %}
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Past Elections ({{ ended_elections.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for election in ended_elections %}
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body py-3">
+                                        <h6 class="mb-1">{{ election.title }}</h6>
+                                        <small class="text-muted">
+                                            {% for pos in election.positions.all %}{{ pos.name }}{% endfor %}
+                                        </small>
+                                        <div class="mt-2">
+                                            {% if election.id in voted_elections %}
+                                                <a href="{% url 'polls:results' election.id %}" class="btn btn-sm btn-outline-primary">
+                                                    View Results
+                                                </a>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Not Participated</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if not active_elections and not upcoming_elections and not ended_elections %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-x display-1 text-muted mb-4"></i>
+                <h4 class="text-muted mb-3">No Elections Available</h4>
+                <p class="text-muted">There are no elections matching your rank and station.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateTimers() {
+    document.querySelectorAll('.countdown-timer').forEach(function(timer) {
+        const id = timer.dataset.id;
+        const start = timer.dataset.start;
+        const end = timer.dataset.end;
+        const display = document.getElementById('timer-' + id);
+        
+        if (!display) return;
+        
+        let targetTime, label;
+        if (start) {
+            targetTime = new Date(start);
+            label = 'Starts in';
+        } else if (end) {
+            targetTime = new Date(end);
+            label = 'Closes in';
+        } else {
+            return;
+        }
+        
+        const now = new Date();
+        const diff = targetTime - now;
+        
+        if (diff <= 0) {
+            display.textContent = 'Now!';
+            location.reload();
+            return;
+        }
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        if (days > 0) {
+            display.textContent = days + 'd ' + hours + 'h ' + minutes + 'm';
+        } else if (hours > 0) {
+            display.textContent = hours + 'h ' + minutes + 'm ' + seconds + 's';
+        } else {
+            display.textContent = minutes + 'm ' + seconds + 's';
+        }
+    });
+}
+
+updateTimers();
+setInterval(updateTimers, 1000);
+</script>
+{% endblock %}

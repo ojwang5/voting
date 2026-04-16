@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Candidates - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-people me-2 text-info"></i>
+                Candidate Management
+            </h1>
+            <div>
+                <a href="{% url 'polls:admin_register_candidate' %}" class="btn btn-info me-2">
+                    <i class="bi bi-plus-circle"></i> Add Candidate
+                </a>
+                <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Candidates ({{ candidates.count }})</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-1"></i> Export
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'polls:export_candidates_csv' %}">
+                                <i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'polls:export_candidates_pdf' %}">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'polls:export_candidates_docx' %}">
+                                <i class="bi bi-file-earmark-word me-2"></i>DOCX
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if candidates %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Candidate</th>
+                                    <th>Force #</th>
+                                    <th>Rank</th>
+                                    <th>Election</th>
+                                    <th>Position</th>
+                                    <th>Votes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for candidate in candidates %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ candidate.name }}</strong>
+                                        {% if candidate.biography %}
+                                            <br><small class="text-muted">{{ candidate.biography|truncatewords:10 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><code>{{ candidate.force_number }}</code></td>
+                                    <td><span class="badge bg-secondary">{{ candidate.rank }}</span></td>
+                                    <td>{{ candidate.election.title|truncatechars:25 }}</td>
+                                    <td><span class="badge bg-info">{{ candidate.position.name }}</span></td>
+                                    <td><span class="badge bg-success">{{ candidate.vote_set.count }}</span></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'polls:admin_edit_candidate' candidate.id %}" class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'polls:admin_delete_candidate' candidate.id %}" class="btn btn-outline-danger" title="Delete" onclick="return confirm('Delete {{ candidate.name }}?')">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people display-4 text-muted mb-3"></i>
+                        <h5 class="text-muted">No candidates registered yet</h5>
+                        <a href="{% url 'polls:admin_register_candidate' %}" class="btn btn-info btn-lg">
+                            <i class="bi bi-plus-circle"></i> Add First Candidate
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

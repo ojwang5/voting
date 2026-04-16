@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if election %}Edit{% else %}Create{% endif %} Election - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header {% if election %}bg-warning{% else %}bg-success{% endif %} text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-{% if election %}pencil{% else %}plus-circle{% endif %} me-2"></i>
+                    {% if election %}Edit{% else %}Create New{% endif %} Election
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary border-bottom pb-2"><i class="bi bi-info-circle me-2"></i>Basic Information</h5>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Election Title *</label>
+                            <input type="text" name="title" class="form-control" 
+                                   value="{{ form.title.value|default:election.title|default:'' }}" required maxlength="200"
+                                   placeholder="e.g., 2024 General Election">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="2">{{ form.description.value|default:election.description|default:'' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Positions *</label>
+                            <select name="positions" class="form-select" multiple size="5">
+                                {% for pos in positions %}
+                                    <option value="{{ pos.id }}" {% if pos in election.positions.all %}selected{% endif %}>{{ pos.name }}</option>
+                                {% empty %}
+                                    <option value="">No positions available. Create one first.</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <h5 class="text-success border-bottom pb-2">
+                                <i class="bi bi-clock me-2"></i>Election Duration
+                            </h5>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Start Time *</label>
+                            <input type="datetime-local" name="start_time" class="form-control" 
+                                   value="{{ form.start_time.value|date:'Y-m-d\TH:i'|default:election.start_time|date:'Y-m-d\TH:i'|default:'' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Time *</label>
+                            <input type="datetime-local" name="end_time" class="form-control" 
+                                   value="{{ form.end_time.value|date:'Y-m-d\TH:i'|default:election.end_time|date:'Y-m-d\TH:i'|default:'' }}" required>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDuration('1h')">+1 Hour</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDuration('24h')">+24 Hours</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDuration('7d')">+7 Days</button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="resetTimes()">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <h5 class="text-warning border-bottom pb-2">
+                                <i class="bi bi-people me-2"></i>Eligibility (Optional)
+                            </h5>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Eligible Ranks</label>
+                            <input type="text" name="eligible_ranks" class="form-control" 
+                                   value="{{ form.eligible_ranks.value|default:election.eligible_ranks|default:'' }}"
+                                   placeholder="e.g., INSPECTOR, SP">
+                            <small class="text-muted">Leave empty for all ranks</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Eligible Stations</label>
+                            <input type="text" name="eligible_stations" class="form-control" 
+                                   value="{{ form.eligible_stations.value|default:election.eligible_stations|default:'' }}"
+                                   placeholder="e.g., Kampala, Central">
+                            <small class="text-muted">Leave empty for all stations</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-check-lg"></i> 
+                            {% if election %}Save Changes{% else %}Create Election{% endif %}
+                        </button>
+                        <a href="{% url 'polls:admin_elections' %}" class="btn btn-outline-secondary btn-lg px-5">
+                            <i class="bi bi-x-lg"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setDuration(duration) {
+    const startInput = document.querySelector('input[name="start_time"]');
+    const endInput = document.querySelector('input[name="end_time"]');
+    const now = new Date();
+    
+    let endDate = new Date(now);
+    if (duration === '1h') endDate.setHours(endDate.getHours() + 1);
+    else if (duration === '24h') endDate.setDate(endDate.getDate() + 1);
+    else if (duration === '7d') endDate.setDate(endDate.getDate() + 7);
+    
+    const formatDate = (d) => {
+        return d.getFullYear() + '-' + 
+               String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(d.getDate()).padStart(2, '0') + 'T' + 
+               String(d.getHours()).padStart(2, '0') + ':' + 
+               String(d.getMinutes()).padStart(2, '0');
+    };
+    
+    if (!startInput.value) startInput.value = formatDate(now);
+    endInput.value = formatDate(endDate);
+}
+
+function resetTimes() {
+    const startInput = document.querySelector('input[name="start_time"]');
+    const endInput = document.querySelector('input[name="end_time"]');
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const formatDate = (d) => {
+        return d.getFullYear() + '-' + 
+               String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+               String(d.getDate()).padStart(2, '0') + 'T' + 
+               String(d.getHours()).padStart(2, '0') + ':' + 
+               String(d.getMinutes()).padStart(2, '0');
+    };
+    
+    startInput.value = formatDate(now);
+    endInput.value = formatDate(tomorrow);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Voting System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0"><i class="bi bi-shield-lock me-2"></i>Vote Login</h3>
+            </div>
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post" action="{% url 'polls:login' %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label">Username (Force Number)</label>
+                        <input type="text" name="username" class="form-control form-control-lg" 
+                               placeholder="Enter your force number" required autofocus>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control form-control-lg" 
+                               placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mb-3 py-2">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                    </button>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Don't have an account?</strong><br>
+                        Contact your administrator to get login credentials.
+                    </div>
+                    <a href="{% url 'polls:password_reset_request' %}" class="text-decoration-none">
+                        <i class="bi bi-key me-1"></i>Forgot Password?
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4 text-muted">
+            <small> VotingHub Uganda</small>
+        </div>
+    </div>
+</div>
+{% endblock %}

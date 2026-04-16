@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - VotingHub{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center py-5 mb-5">
+    <div class="container">
+        <h1 class="display-3 fw-bold mb-4">
+            <i class="bi bi-vote display-1 d-block mb-3 text-primary"></i>
+            Uganda Police Force<br>
+            <span class="text-primary">Secure Voting Platform</span>
+        </h1>
+        <p class="lead mb-5 opacity-90">Transparent • Secure • Democratic</p>
+        <div class="d-flex flex-column flex-md-row gap-3 justify-content-center">
+            {% if user.is_authenticated %}
+                <a href="{% url 'polls:index' %}" class="btn btn-primary btn-lg px-5 py-3">
+                    <i class="bi bi-speedometer2"></i> My Dashboard
+                </a>
+                {% if user.role == 'SUPER_ADMIN' or user.role == 'ADMIN' %}
+                    <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-primary btn-lg px-5 py-3">
+                        <i class="bi bi-gear"></i> Admin Panel
+                    </a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'polls:login' %}" class="btn btn-primary btn-lg px-5 py-3">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </a>
+                <a href="{% url 'polls:register' %}" class="btn btn-outline-light btn-lg px-5 py-3">
+                    <i class="bi bi-person-plus"></i> Register
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card h-100 text-center p-5">
+                <i class="bi bi-shield-check display-4 text-success mb-4"></i>
+                <h4 class="fw-bold mb-3">Secure & Audited</h4>
+                <p class="lead mb-0 opacity-90">One vote per voter. Full audit trail. IP tracking.</p>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100 text-center p-5">
+                <i class="bi bi-clock display-4 text-primary mb-4"></i>
+                <h4 class="fw-bold mb-3">Real-time Results</h4>
+                <p class="lead mb-0 opacity-90">Live vote counts & percentages as votes come in.</p>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100 text-center p-5">
+                <i class="bi bi-phone display-4 text-info mb-4"></i>
+                <h4 class="fw-bold mb-3">Mobile First</h4>
+                <p class="lead mb-0 opacity-90">Fully responsive on all devices. Fast & smooth.</p>
+            </div>
+        </div>
+    </div>
+
+    {% if latest_elections %}
+    <div class="mt-5">
+        <h2 class="h3 mb-4 text-center">
+            <i class="bi bi-fire me-2 text-warning"></i>
+            Featured Elections
+        </h2>
+        <div class="row g-4">
+            {% for election in latest_elections %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card election-preview h-100">
+                    <div class="card-img-top bg-gradient-primary h-48 d-flex align-items-end p-4">
+                        <div>
+                            <span class="badge bg-light text-dark mb-2">{{ election.position }}</span>
+                            <h5 class="text-white mb-0">{{ election.title|truncatechars:40 }}</h5>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if election.description %}
+                            <p class="text-muted small mb-3">{{ election.description|truncatewords:20 }}</p>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <small class="text-muted">
+                                Created by {{ election.created_by.get_full_name }}
+                            </small>
+                            <span class="badge bg-success">
+                                {{ election.start_time|date:"M d" }} - {{ election.end_time|date:"H:i" }}
+                            </span>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'polls:detail' election.id %}" class="btn btn-primary">
+                                View Election
+                            </a>
+                            <a href="{% url 'polls:results' election.id %}" class="btn btn-outline-secondary btn-sm">
+                                See Results
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
