@@ -1,4 +1,4 @@
-# Django Voting System
+# VOTING HUB Voting System
 
 A secure, multi-user voting system built with Django 5.1. Features user authentication, poll creation, voting, real-time results, API endpoints, and comprehensive security.
 
