@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ election.title }} - VotingHub{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0 mb-5">
+                <div class="card-body p-5 text-center">
+                    <div class="election-hero mb-5">
+                        <h1 class="display-4 fw-bold mb-3">{{ election.title }}</h1>
+                        {% if election.description %}
+                            <p class="lead text-muted mb-4">{{ election.description }}</p>
+                        {% endif %}
+                        <div class="election-meta">
+                            <span class="badge bg-primary fs-6 px-4 py-2 me-3">{{ election.position }}</span>
+                            <span class="badge bg-success fs-6 px-4 py-2">
+                                Opens {{ election.start_time|date:"MMM dd, yyyy H:i" }}
+                            </span>
+                            <span class="badge bg-warning fs-6 px-4 py-2">
+                                Closes {{ election.end_time|date:"MMM dd, yyyy H:i" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if not user.is_authenticated %}
+                        <div class="alert alert-info border-0 shadow-sm">
+                            <i class="bi bi-shield-lock fs-3 me-3 float-start"></i>
+                            <div>
+                                <h5>Login Required</h5>
+                                <p>Participate in this election by logging in with your police credentials.</p>
+                                <a href="{% url 'polls:login' %}" class="btn btn-primary btn-lg mt-3">
+                                    <i class="bi bi-box-arrow-in-right"></i> Login to Vote
+                                </a>
+                            </div>
+                        </div>
+                    {% elif not election.is_voter_eligible %}
+                        <div class="alert alert-warning border-0 shadow-sm">
+                            <i class="bi bi-exclamation-triangle fs-3 me-3 float-start"></i>
+                            <div>
+                                <h5>Not Eligible</h5>
+                                <p>This election is restricted to specific ranks and stations.</p>
+                                <a href="{% url 'polls:index' %}" class="btn btn-outline-warning mt-3">
+                                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    {% elif election.is_open %}
+                        <div class="text-center">
+                            <h3 class="text-success mb-4">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                Voting is OPEN!
+                            </h3>
+                            <a href="{% url 'polls:vote' election.id %}" class="btn btn-success btn-lg px-6 py-3 mb-4">
+                                <i class="bi bi-check-circle"></i> Vote Now
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-secondary border-0 shadow-sm">
+                            <i class="bi bi-clock-history fs-3 me-3 float-start"></i>
+                            <div>
+                                <h5>Voting Closed</h5>
+                                <p>Election completed. View the final results below.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if election.candidates.exists %}
+                        <div class="candidates-section mt-5">
+                            <h4 class="text-center mb-5">
+                                <i class="bi bi-people me-2"></i>
+                                Candidates ({{ election.candidates.count }})
+                            </h4>
+                            <div class="row g-4">
+                                {% for candidate in election.candidates.all %}
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="candidate-card h-100">
+                                            {% if candidate.photo %}
+                                                <img src="{{ candidate.photo.url }}" alt="{{ candidate.name }}" class="candidate-photo">
+                                            {% else %}
+                                                <div class="candidate-placeholder">
+                                                    <i class="bi bi-person-circle display-4"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div class="p-4">
+                                                <h5 class="fw-bold mb-2">{{ candidate.name }}</h5>
+                                                <p class="text-muted mb-3">{{ candidate.rank }} - Force #{{ candidate.force_number }}</p>
+                                                {% if candidate.biography %}
+                                                    <p class="small mb-4">{{ candidate.biography|truncatewords:25 }}</p>
+                                                {% endif %}
+                                                <a href="#" class="btn btn-outline-primary w-100">
+                                                    View Profile
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="text-center mt-6">
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'polls:index' %}" class="btn btn-primary btn-lg px-6 py-3 me-3">
+                                <i class="bi bi-house"></i> My Dashboard
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'polls:results' election.id %}" class="btn btn-outline-primary btn-lg px-6 py-3">
+                            <i class="bi bi-graph-up"></i> View Results
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.election-hero {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
+    padding: 3rem;
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.candidate-card {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+.candidate-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+.candidate-photo, .candidate-placeholder {
+    height: 200px;
+    object-fit: cover;
+}
+.candidate-placeholder {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.election-meta .badge {
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+}
+@media (max-width: 768px) {
+    .election-hero {
+        padding: 2rem 1rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edit Candidate - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-pencil me-2"></i>Edit Candidate
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="mt-3 text-center">
+                        <img id="edit_photo_preview" src="{% if candidate.photo %}{{ candidate.photo.url }}{% endif %}" alt="Photo Preview" class="img-fluid rounded-circle shadow" style="max-width:120px; height:120px; object-fit:cover; display: {% if candidate.photo %}block{% else %}none{% endif %}; margin:0 auto; border:2px solid #ddd;">
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-info flex-grow-1">
+                            <i class="bi bi-check-lg"></i> Save Changes
+                        </button>
+                        <a href="{% url 'polls:admin_candidates' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden JSON data for position mapping -->
+<script type="application/json" id="election_positions_data">
+{{ election_positions_json|safe }}
+</script>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const electionSelect = document.querySelector('[name="election"]');
+    const positionSelect = document.querySelector('[name="position"]');
+    const electionPositionsData = JSON.parse(document.getElementById('election_positions_data').textContent);
+    const currentPositionId = {{ current_position_id|safe }};
+        const editPhotoInput = document.querySelector('[name="photo"]');
+        const editPhotoPreview = document.getElementById('edit_photo_preview');
+        let editCurrentURL = null;
+    
+    function updatePositions() {
+        const selectedElectionId = electionSelect.value;
+        
+        if (!selectedElectionId) {
+            positionSelect.innerHTML = '<option value="">Select Election First</option>';
+            positionSelect.disabled = true;
+            return;
+        }
+        
+        // Get positions for this election (includes fallback to all positions if empty)
+        const positions = electionPositionsData[selectedElectionId] || [];
+        
+        // Store the currently selected position before clearing
+        const previousPosition = positionSelect.value;
+        
+        // Rebuild position select
+        positionSelect.innerHTML = '';
+        
+        if (positions.length === 0) {
+            positionSelect.innerHTML = '<option value="">No positions available</option>';
+            positionSelect.disabled = true;
+            return;
+        }
+        
+        // Create options for each position
+        positions.forEach(pos => {
+            const option = document.createElement('option');
+            option.value = pos.id;
+            option.textContent = pos.name;
+            positionSelect.appendChild(option);
+        });
+        
+        // Try to restore the previous selection
+        if (previousPosition) {
+            positionSelect.value = previousPosition;
+        }
+        
+        // If no value was selected and we have a current position, select it
+        if (!positionSelect.value && currentPositionId) {
+            positionSelect.value = currentPositionId;
+        }
+        
+        positionSelect.disabled = false;
+    }
+    
+    // Update positions when election changes
+    electionSelect.addEventListener('change', updatePositions);
+    
+    // Initialize on page load
+    updatePositions();
+
+    // Live preview for edit photo input
+    if (editPhotoInput) {
+        editPhotoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                if (editCurrentURL) { URL.revokeObjectURL(editCurrentURL); editCurrentURL = null; }
+                // hide preview only if no existing image
+                if (!editPhotoPreview.getAttribute('src')) {
+                    editPhotoPreview.style.display = 'none';
+                }
+                return;
+            }
+            if (editCurrentURL) { URL.revokeObjectURL(editCurrentURL); }
+            editCurrentURL = URL.createObjectURL(file);
+            editPhotoPreview.src = editCurrentURL;
+            editPhotoPreview.style.display = 'block';
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

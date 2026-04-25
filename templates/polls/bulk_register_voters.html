@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Register Voters - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-upload me-2 text-warning"></i>
+                Bulk Voter Registration
+            </h1>
+            <a href="{% url 'polls:admin_voters' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Voters
+            </a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Instructions</h5>
+            </div>
+            <div class="card-body">
+                <p>Upload a CSV or Excel file with the following columns:</p>
+                <ul>
+                    <li><code>force_number</code> (required) - Unique force number</li>
+                    <li><code>first_name</code> (required)</li>
+                    <li><code>last_name</code> (required)</li>
+                    <li><code>email</code> (required)</li>
+                    <li><code>rank</code> (required) - Valid ranks: CONSTABLE, CORPORAL, SERGEANT, INSPECTOR, ASP, SP, ACP, CP, AIGP, IGP</li>
+                    <li><code>station</code> (required)</li>
+                    <li><code>phone</code> (optional)</li>
+                    <li><code>is_active_voter</code> (optional) - true/false, default: true</li>
+                </ul>
+                <p class="mb-0"><strong>Note:</strong> Passwords will be auto-generated and displayed after successful registration.</p>
+            </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up me-2"></i>Upload File</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-md-8">
+                        {{ form.file }}
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="bi bi-upload me-2"></i>Upload & Register
+                        </button>
+                    </div>
+                    {% if form.file.errors %}
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                {{ form.file.errors }}
+                            </div>
+                    {% endif %}
+                </form>
+            </div>
+
+        {% if errors %}
+            <div class="card mb-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Errors ({{ errors|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for error in errors %}
+                            <li class="list-group-item list-group-item-danger">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+        {% endif %}
+
+        {% if created_voters %}
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Successfully Registered ({{ created_voters|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Row</th>
+                                    <th>Username</th>
+                                    <th>Force #</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Password</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for voter in created_voters %}
+                                <tr>
+                                    <td>{{ voter.row }}</td>
+                                    <td><code>{{ voter.username }}</code></td>
+                                    <td>{{ voter.force_number }}</td>
+                                    <td>{{ voter.full_name }}</td>
+                                    <td>{{ voter.email }}</td>
+                                    <td><code class="text-success">{{ voter.password }}</code></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Please save these credentials securely. They will not be shown again.
+                    </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

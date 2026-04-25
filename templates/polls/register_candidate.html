@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Candidate - VotingHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-heart me-2"></i>Register New Candidate
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Force Number *</label>
+                            <input type="number" name="force_number" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Rank *</label>
+                            <select name="rank" class="form-select" required>
+                                <option value="">Select Rank</option>
+                                <option value="CONSTABLE">Constable</option>
+                                <option value="CORPORAL">Corporal</option>
+                                <option value="SERGEANT">Sergeant</option>
+                                <option value="INSPECTOR">Inspector</option>
+                                <option value="ASP">Assistant SP</option>
+                                <option value="SP">Superintendent</option>
+                                <option value="SSP">Senior SP</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Election *</label>
+                            <select id="election_select" name="election" class="form-select" required>
+                                <option value="">Select Election</option>
+                                {% for election in elections %}
+                                    <option value="{{ election.id }}" data-positions="{{ election.positions.all|safe }}">
+                                        {{ election.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Position *</label>
+                            <select id="position_select" name="position" class="form-select" required>
+                                <option value="">Select Election First</option>
+                            </select>
+                            <small class="text-muted">Positions will be filtered based on selected election</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Photo</label>
+                            <input type="file" id="photo_input" name="photo" class="form-control" accept="image/*">
+                            <div class="mt-2 text-center">
+                                <img id="photo_preview" src="" alt="Preview" class="img-fluid rounded-circle shadow" style="max-width:120px; height:120px; object-fit:cover; display:none; margin:0 auto; border:2px solid #ddd;">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Biography / Manifesto</label>
+                            <textarea name="biography" class="form-control" rows="4" placeholder="Enter candidate's biography or manifesto"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-info btn-lg flex-grow-1">
+                            <i class="bi bi-check-circle"></i> Register Candidate
+                        </button>
+                        <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden JSON data for position mapping -->
+<script type="application/json" id="election_positions_data">
+{{ election_positions_json|safe }}
+</script>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const electionSelect = document.getElementById('election_select');
+    const positionSelect = document.getElementById('position_select');
+    const electionPositionsData = JSON.parse(document.getElementById('election_positions_data').textContent);
+        const photoInput = document.getElementById('photo_input');
+        const photoPreview = document.getElementById('photo_preview');
+    
+    function updatePositions() {
+        const selectedElectionId = electionSelect.value;
+        
+        // Clear current options
+        positionSelect.innerHTML = '';
+        
+        if (!selectedElectionId) {
+            positionSelect.innerHTML = '<option value="">Select Election First</option>';
+            positionSelect.disabled = true;
+            return;
+        }
+        
+        // Get positions for this election
+        const positions = electionPositionsData[selectedElectionId] || [];
+        
+        if (positions.length === 0) {
+            positionSelect.innerHTML = '<option value="">No positions available for this election</option>';
+            positionSelect.disabled = true;
+            return;
+        }
+        
+        // Add positions to dropdown
+        positionSelect.innerHTML = '<option value="">Select Position</option>';
+        positions.forEach(pos => {
+            const option = document.createElement('option');
+            option.value = pos.id;
+            option.textContent = pos.name;
+            positionSelect.appendChild(option);
+        });
+        
+        positionSelect.disabled = false;
+    }
+    
+    // Update positions when election changes
+    electionSelect.addEventListener('change', updatePositions);
+    
+    // Initialize on page load
+    updatePositions();
+
+    // Image preview for selected file (register)
+    if (photoInput) {
+        let currentURL = null;
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                photoPreview.src = '';
+                photoPreview.style.display = 'none';
+                if (currentURL) { URL.revokeObjectURL(currentURL); currentURL = null; }
+                return;
+            }
+            if (currentURL) { URL.revokeObjectURL(currentURL); }
+            currentURL = URL.createObjectURL(file);
+            photoPreview.src = currentURL;
+            photoPreview.style.display = 'block';
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
