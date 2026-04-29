@@ -12,7 +12,16 @@ import secrets
 import string
 from .models import Position, Candidate, PoliceUser, Election, Vote, ElectionPosition, AuditLog, ElectionRegistration
 
-from .forms import PoliceUserRegistrationForm, PoliceUserEditForm, PositionForm, CandidateForm, BulkVoterUploadForm
+# PDF / DOCX helpers
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+from .forms import PoliceUserRegistrationForm, PoliceUserEditForm, PositionForm, CandidateForm, BulkVoterUploadForm, AdminChangePasswordForm
 
 
 def is_admin(user):
@@ -123,6 +132,7 @@ def create_election(request):
         end_time = request.POST.get('end_time', '').strip()
         eligible_ranks = request.POST.get('eligible_ranks', '').strip()
         eligible_stations = request.POST.get('eligible_stations', '').strip()
+        logo_file = request.FILES.get('logo')
         selected_positions = request.POST.getlist('positions')
         if not title:
             messages.error(request, 'Election title is required.')
@@ -144,6 +154,7 @@ def create_election(request):
             return render(request, 'polls/create_election.html', {'positions': positions, 'selected_position_ids': selected_positions})
         try:
             election = Election.objects.create(title=title, description=description,
+                logo=logo_file if logo_file else None,
                 start_time=start_dt, end_time=end_dt, eligible_ranks=eligible_ranks,
                 eligible_stations=eligible_stations, created_by=request.user)
             positions_added = 0
@@ -183,6 +194,7 @@ def edit_election(request, election_id):
         end_time = request.POST.get('end_time')
         election.eligible_ranks = request.POST.get('eligible_ranks', '')
         election.eligible_stations = request.POST.get('eligible_stations', '')
+        logo_file = request.FILES.get('logo')
         if start_time and end_time:
             try:
                 election.start_time = timezone.make_aware(datetime.strptime(start_time, '%Y-%m-%dT%H:%M'))
@@ -191,6 +203,9 @@ def edit_election(request, election_id):
                 messages.error(request, f'Invalid date/time format: {str(e)}')
                 return render(request, 'polls/create_election.html', {'election': election, 'positions': positions, 'selected_position_ids': selected_position_ids})
         election.save()
+        if logo_file:
+            election.logo = logo_file
+            election.save()
         selected_positions = request.POST.getlist('positions')
         election.positions.clear()
         for pos_id in selected_positions:
@@ -199,8 +214,11 @@ def edit_election(request, election_id):
                 ElectionPosition.objects.create(election=election, position=pos)
             except Position.DoesNotExist:
                 pass
+        audit_details = f'Updated election: {election.title} (ID: {election.id})'
+        if logo_file:
+            audit_details += ' with new logo'
         create_audit_log(request.user, AuditLog.ACTION_ELECTION_UPDATE,
-            f'Updated election: {election.title} (ID: {election.id})', request, 'Election', election.id)
+            audit_details, request, 'Election', election.id)
         messages.success(request, 'Election updated successfully!')
         return redirect('polls:admin_elections')
     return render(request, 'polls/create_election.html', {'election': election, 'positions': positions, 'selected_position_ids': selected_position_ids})
@@ -333,6 +351,103 @@ def admin_reset_voter_password(request, voter_id):
 
 @login_required
 @user_passes_test(is_superadmin)
+def admin_change_voter_password(request, voter_id):
+    voter = get_object_or_404(PoliceUser, pk=voter_id)
+    if request.method == 'POST':
+        form = AdminChangePasswordForm(request.POST)
+        if form.is_valid():
+            voter.set_password(form.cleaned_data['new_password'])
+            voter.must_change_password = form.cleaned_data.get('force_change', False)
+            voter.save()
+            create_audit_log(request.user, AuditLog.ACTION_VOTER_RESET_PASSWORD,
+                f'Changed password for voter: {voter.username} (Force #{voter.force_number})', request, 'PoliceUser', voter.id)
+            messages.success(request, f'Password changed for {voter.username}!')
+            return redirect('polls:admin_voters')
+    else:
+        form = AdminChangePasswordForm()
+    return render(request, 'polls/admin_change_password.html', {
+        'form': form, 'voter': voter, 'title': 'Change Voter Password'
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_voter_elections(request, voter_id):
+    voter = get_object_or_404(PoliceUser, pk=voter_id, role='VOTER')
+    registered_election_ids = set(ElectionRegistration.objects.filter(
+        voter=voter
+    ).values_list('election_id', flat=True))
+
+    registered_elections = Election.objects.prefetch_related('positions').filter(
+        id__in=registered_election_ids
+    ).order_by('-start_time')
+
+    eligible_unregistered = []
+    for election in Election.objects.prefetch_related('positions').all().order_by('-start_time'):
+        if election.is_voter_eligible(voter) and election.id not in registered_election_ids:
+            eligible_unregistered.append(election)
+
+    return render(request, 'polls/admin_voter_elections.html', {
+        'voter': voter,
+        'registered_elections': registered_elections,
+        'eligible_unregistered': eligible_unregistered,
+        'registered_count': registered_elections.count(),
+        'eligible_count': len(eligible_unregistered),
+        'now': timezone.now(),
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_register_voter_to_election_by_voter(request, voter_id, election_id):
+    election = get_object_or_404(Election, pk=election_id)
+    voter = get_object_or_404(PoliceUser, pk=voter_id, role='VOTER')
+
+    if not election.is_voter_eligible(voter):
+        messages.error(request, f'Voter {voter.get_full_name()} is not eligible for this election.')
+        return redirect('polls:admin_voter_elections', voter_id=voter_id)
+
+    if ElectionRegistration.objects.filter(voter=voter, election=election).exists():
+        messages.info(request, f'Voter {voter.get_full_name()} is already registered for this election.')
+        return redirect('polls:admin_voter_elections', voter_id=voter_id)
+
+    ElectionRegistration.objects.create(voter=voter, election=election, registered_by=request.user)
+    create_audit_log(
+        request.user, AuditLog.ACTION_VOTER_UPDATE,
+        f'Registered voter {voter.username} for election: {election.title}', request,
+        target_model='Election', target_id=election.id
+    )
+    messages.success(request, f'Voter {voter.get_full_name()} registered for "{election.title}".')
+    return redirect('polls:admin_voter_elections', voter_id=voter_id)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_unregister_voter_from_election_by_voter(request, voter_id, election_id):
+    election = get_object_or_404(Election, pk=election_id)
+    voter = get_object_or_404(PoliceUser, pk=voter_id, role='VOTER')
+
+    registration = ElectionRegistration.objects.filter(voter=voter, election=election).first()
+    if not registration:
+        messages.error(request, f'Voter {voter.get_full_name()} is not registered for this election.')
+        return redirect('polls:admin_voter_elections', voter_id=voter_id)
+
+    if Vote.objects.filter(voter=voter, election=election).exists():
+        messages.error(request, f'Cannot unregister {voter.get_full_name()} — they have already voted in this election.')
+        return redirect('polls:admin_voter_elections', voter_id=voter_id)
+
+    registration.delete()
+    create_audit_log(
+        request.user, AuditLog.ACTION_VOTER_UPDATE,
+        f'Unregistered voter {voter.username} from election: {election.title}', request,
+        target_model='Election', target_id=election.id
+    )
+    messages.success(request, f'Voter {voter.get_full_name()} unregistered from "{election.title}".')
+    return redirect('polls:admin_voter_elections', voter_id=voter_id)
+
+
+@login_required
+@user_passes_test(is_superadmin)
 def admin_register_candidate(request):
     elections = Election.objects.prefetch_related('positions').all()
     positions = Position.objects.all()
@@ -394,6 +509,31 @@ def admin_edit_candidate(request, candidate_id):
 @user_passes_test(is_superadmin)
 def admin_delete_candidate(request, candidate_id):
     candidate = get_object_or_404(Candidate, pk=candidate_id)
+
+
+@login_required
+@user_passes_test(is_superadmin)
+def delete_election_position(request, election_id, position_id):
+    election = get_object_or_404(Election, pk=election_id)
+    position = get_object_or_404(Position, pk=position_id)
+    
+    # Safety check: cannot delete if candidates exist for this position in this election
+    if Candidate.objects.filter(election=election, position=position).exists():
+        messages.error(request, f'Cannot delete position "{position.name}" from "{election.title}". Candidates exist for this position.')
+        return redirect('polls:admin_elections')
+    
+    # Delete the association
+    election_pos = ElectionPosition.objects.filter(election=election, position=position)
+    count = election_pos.count()
+    election_pos.delete()
+    
+    create_audit_log(request.user, AuditLog.ACTION_ELECTION_UPDATE,
+        f'Removed position "{position.name}" from election "{election.title}" ({count} association(s) deleted)',
+        request, 'ElectionPosition', position.id)
+    
+    messages.success(request, f'Position "{position.name}" removed from "{election.title}".')
+    return redirect('polls:admin_elections')
+
     if request.method == 'POST':
         create_audit_log(request.user, AuditLog.ACTION_CANDIDATE_DELETE,
             f'Deleted candidate: {candidate.name} (Force #{candidate.force_number}) from {candidate.election.title}',
@@ -450,14 +590,72 @@ def export_voters_csv(request):
 @user_passes_test(is_admin)
 def export_voters_pdf(request):
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_VOTERS, 'Exported voters as PDF', request)
-    return HttpResponse('PDF export requires reportlab. Please use CSV export instead.', content_type='text/plain')
+    voters = PoliceUser.objects.filter(role='VOTER').order_by('force_number')
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    elements = []
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph('Voters Export', styles['Title']))
+    elements.append(Spacer(1, 12))
+    data = [['Username', 'Force #', 'Full Name', 'Rank', 'Station', 'Phone', 'Email', 'Votes', 'Status']]
+    for v in voters:
+        data.append([v.username, v.force_number, v.get_full_name(), v.get_rank_display(), v.station, v.phone or '-', v.email or '-', str(v.votes.count()), 'Active' if v.is_active else 'Inactive'])
+    t = Table(data, repeatRows=1)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8fafc')),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="voters.pdf"'
+    response.write(pdf)
+    return response
 
 
 @login_required
 @user_passes_test(is_admin)
 def export_voters_docx(request):
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_VOTERS, 'Exported voters as DOCX', request)
-    return HttpResponse('DOCX export requires python-docx. Please use CSV export instead.', content_type='text/plain')
+    voters = PoliceUser.objects.filter(role='VOTER').order_by('force_number')
+    doc = Document()
+    title = doc.add_heading('Voters Export', level=0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table = doc.add_table(rows=1, cols=9)
+    table.style = 'Table Grid'
+    hdr_cells = table.rows[0].cells
+    headers = ['Username', 'Force #', 'Full Name', 'Rank', 'Station', 'Phone', 'Email', 'Votes', 'Status']
+    for i, h in enumerate(headers):
+        hdr_cells[i].text = h
+        for paragraph in hdr_cells[i].paragraphs:
+            for run in paragraph.runs:
+                run.font.bold = True
+    for v in voters:
+        row_cells = table.add_row().cells
+        row_cells[0].text = v.username
+        row_cells[1].text = str(v.force_number)
+        row_cells[2].text = v.get_full_name()
+        row_cells[3].text = v.get_rank_display()
+        row_cells[4].text = v.station
+        row_cells[5].text = v.phone or '-'
+        row_cells[6].text = v.email or '-'
+        row_cells[7].text = str(v.votes.count())
+        row_cells[8].text = 'Active' if v.is_active else 'Inactive'
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = 'attachment; filename="voters.docx"'
+    return response
 
 
 @login_required
@@ -478,14 +676,69 @@ def export_candidates_csv(request):
 @user_passes_test(is_admin)
 def export_candidates_pdf(request):
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_CANDIDATES, 'Exported candidates as PDF', request)
-    return HttpResponse('PDF export requires reportlab. Please use CSV export instead.', content_type='text/plain')
+    candidates = Candidate.objects.all().select_related('election', 'position').order_by('position__name', 'name')
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    elements = []
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph('Candidates Export', styles['Title']))
+    elements.append(Spacer(1, 12))
+    data = [['Name', 'Force #', 'Rank', 'Position', 'Election', 'Votes']]
+    for c in candidates:
+        data.append([c.name, c.force_number, c.get_rank_display(), c.position.name, c.election.title, str(c.vote_set.count())])
+    t = Table(data, repeatRows=1)
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8fafc')),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+    ]))
+    elements.append(t)
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="candidates.pdf"'
+    response.write(pdf)
+    return response
 
 
 @login_required
 @user_passes_test(is_admin)
 def export_candidates_docx(request):
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_CANDIDATES, 'Exported candidates as DOCX', request)
-    return HttpResponse('DOCX export requires python-docx. Please use CSV export instead.', content_type='text/plain')
+    candidates = Candidate.objects.all().select_related('election', 'position').order_by('position__name', 'name')
+    doc = Document()
+    title = doc.add_heading('Candidates Export', level=0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table = doc.add_table(rows=1, cols=6)
+    table.style = 'Table Grid'
+    hdr_cells = table.rows[0].cells
+    headers = ['Name', 'Force #', 'Rank', 'Position', 'Election', 'Votes']
+    for i, h in enumerate(headers):
+        hdr_cells[i].text = h
+        for paragraph in hdr_cells[i].paragraphs:
+            for run in paragraph.runs:
+                run.font.bold = True
+    for c in candidates:
+        row_cells = table.add_row().cells
+        row_cells[0].text = c.name
+        row_cells[1].text = str(c.force_number)
+        row_cells[2].text = c.get_rank_display()
+        row_cells[3].text = c.position.name
+        row_cells[4].text = c.election.title
+        row_cells[5].text = str(c.vote_set.count())
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = 'attachment; filename="candidates.docx"'
+    return response
 
 
 @login_required
@@ -510,19 +763,112 @@ def export_results_csv(request, election_id):
 @login_required
 @user_passes_test(is_admin)
 def export_results_pdf(request, election_id):
-    election = get_object_or_404(Election, pk=election_id)
+    election = get_object_or_404(Election.objects.prefetch_related('positions'), pk=election_id)
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_RESULTS,
         f'Exported results for election: {election.title} (ID: {election.id}) as PDF', request, 'Election', election.id)
-    return HttpResponse('PDF export requires reportlab. Please use CSV export instead.', content_type='text/plain')
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    elements = []
+    styles = getSampleStyleSheet()
+    # Add logo if available
+    if election.logo:
+        try:
+            from reportlab.platypus import Image
+            logo_path = election.logo.path
+            logo = Image(logo_path, width=1.5*Inches, height=0.75*Inches)
+            logo.hAlign = 'CENTER'
+            elements.append(logo)
+            elements.append(Spacer(1, 12))
+        except:
+            pass  # Skip logo if can't load
+    
+    elements.append(Paragraph(f'Election Results: {election.title}', styles['Title']))
+    elements.append(Spacer(1, 12))
+    from collections import defaultdict
+    position_candidates = defaultdict(list)
+    for candidate in election.candidates.select_related('position').all():
+        position_candidates[candidate.position].append(candidate)
+    for position in sorted(position_candidates.keys(), key=lambda p: p.id):
+        candidates = position_candidates[position]
+        total = sum(c.vote_set.count() for c in candidates)
+        elements.append(Paragraph(position.name, styles['Heading2']))
+        data = [['Candidate', 'Rank', 'Force #', 'Votes', 'Percentage']]
+        for c in candidates:
+            votes = c.vote_set.count()
+            pct = f'{(votes / total * 100):.1f}%' if total > 0 else '0.0%'
+            data.append([c.name, c.get_rank_display(), c.force_number, str(votes), pct])
+        t = Table(data, repeatRows=1)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8fafc')),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 12))
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="results_{election_id}.pdf"'
+    response.write(pdf)
+    return response
 
 
 @login_required
 @user_passes_test(is_admin)
 def export_results_docx(request, election_id):
-    election = get_object_or_404(Election, pk=election_id)
+    election = get_object_or_404(Election.objects.prefetch_related('positions'), pk=election_id)
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_RESULTS,
         f'Exported results for election: {election.title} (ID: {election.id}) as DOCX', request, 'Election', election.id)
-    return HttpResponse('DOCX export requires python-docx. Please use CSV export instead.', content_type='text/plain')
+    doc = Document()
+    # Add logo if available
+    if election.logo:
+        try:
+            logo_path = election.logo.path
+            doc.add_picture(logo_path, width=Inches(2.5))
+        except:
+            pass
+    
+    title = doc.add_heading(f'Election Results: {election.title}', level=0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    from collections import defaultdict
+    position_candidates = defaultdict(list)
+    for candidate in election.candidates.select_related('position').all():
+        position_candidates[candidate.position].append(candidate)
+    for position in sorted(position_candidates.keys(), key=lambda p: p.id):
+        candidates = position_candidates[position]
+        total = sum(c.vote_set.count() for c in candidates)
+        doc.add_heading(position.name, level=2)
+        table = doc.add_table(rows=1, cols=5)
+        table.style = 'Table Grid'
+        hdr_cells = table.rows[0].cells
+        headers = ['Candidate', 'Rank', 'Force #', 'Votes', 'Percentage']
+        for i, h in enumerate(headers):
+            hdr_cells[i].text = h
+            for paragraph in hdr_cells[i].paragraphs:
+                for run in paragraph.runs:
+                    run.font.bold = True
+        for c in candidates:
+            votes = c.vote_set.count()
+            pct = f'{(votes / total * 100):.1f}%' if total > 0 else '0.0%'
+            row_cells = table.add_row().cells
+            row_cells[0].text = c.name
+            row_cells[1].text = c.get_rank_display()
+            row_cells[2].text = c.force_number
+            row_cells[3].text = str(votes)
+            row_cells[4].text = pct
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = f'attachment; filename="results_{election_id}.docx"'
+    return response
 
 
 def _normalize_bulk_key(value):
@@ -723,4 +1069,37 @@ def admin_unregister_voter_from_election(request, election_id, voter_id):
         target_model='Election', target_id=election.id
     )
     messages.success(request, f'Voter {voter.get_full_name()} unregistered from "{election.title}".')
+    return redirect('polls:admin_election_voters', election_id=election_id)
+
+
+@login_required
+@user_passes_test(is_superadmin)
+def admin_reset_voter_votes(request, voter_id):
+    voter = get_object_or_404(PoliceUser, pk=voter_id, role='VOTER')
+    if request.method == 'POST':
+        deleted_count, _ = Vote.objects.filter(voter=voter).delete()
+        create_audit_log(
+            request.user, AuditLog.ACTION_VOTER_UPDATE,
+            f'Reset all votes for voter: {voter.username} (Force #{voter.force_number}) — {deleted_count} vote(s) deleted',
+            request, 'PoliceUser', voter.id
+        )
+        messages.success(request, f'All votes reset for {voter.get_full_name()}. Deleted {deleted_count} vote(s).')
+        return redirect('polls:admin_voters')
+    return redirect('polls:admin_voters')
+
+
+@login_required
+@user_passes_test(is_superadmin)
+def admin_reset_voter_election_votes(request, voter_id, election_id):
+    voter = get_object_or_404(PoliceUser, pk=voter_id, role='VOTER')
+    election = get_object_or_404(Election, pk=election_id)
+    if request.method == 'POST':
+        deleted_count, _ = Vote.objects.filter(voter=voter, election=election).delete()
+        create_audit_log(
+            request.user, AuditLog.ACTION_VOTER_UPDATE,
+            f'Reset votes for voter: {voter.username} (Force #{voter.force_number}) in election "{election.title}" — {deleted_count} vote(s) deleted',
+            request, 'Election', election.id
+        )
+        messages.success(request, f'Votes reset for {voter.get_full_name()} in "{election.title}". Deleted {deleted_count} vote(s).')
+        return redirect('polls:admin_election_voters', election_id=election_id)
     return redirect('polls:admin_election_voters', election_id=election_id)

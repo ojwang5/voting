@@ -3,6 +3,8 @@
 
 {% block title %}{{ title }} - VotingHub{% endblock %}
 
+
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -27,11 +29,55 @@
                 <form method="post">
                     {% csrf_token %}
                     {{ form|crispy }}
+
+                    <div class="card mt-4 border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-check2-square me-2"></i>Select Elections
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Note:</strong> Select the elections this voter should be registered for. Only upcoming elections are shown. If none are selected, the voter will be auto-assigned to all eligible elections.
+                            </div>
+
+                            {% if upcoming_elections %}
+                                <div class="row">
+                                    {% for election in upcoming_elections %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check card p-3 h-100 border">
+                                            <input class="form-check-input" type="checkbox" name="elections" value="{{ election.id }}" id="election_{{ election.id }}">
+                                            <label class="form-check-label w-100" for="election_{{ election.id }}">
+                                                <strong class="d-block">{{ election.title }}</strong>
+                                                <small class="text-muted">
+                                                    {{ election.start_time|date:"M d, Y H:i" }} EAT — {{ election.end_time|date:"M d, Y H:i" }} EAT
+                                                </small>
+                                                {% if election.eligible_ranks %}
+                                                <br><small class="text-muted"><i class="bi bi-person-badge"></i> Ranks: {{ election.eligible_ranks }}</small>
+                                                {% endif %}
+                                                {% if election.eligible_stations %}
+                                                <br><small class="text-muted"><i class="bi bi-geo-alt"></i> Stations: {{ election.eligible_stations }}</small>
+                                                {% endif %}
+                                                <br><small class="text-muted"><i class="bi bi-list-check"></i> Positions: {% for pos in election.positions.all %}{{ pos.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning mb-0">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>No upcoming elections available.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                             <i class="bi bi-check-circle"></i> Register Voter
                         </button>
-                        <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary btn-lg">
+<a href="{% url 'polls:admin_dashboard' %}" class="btn btn-back-dashboard btn-lg">
                             <i class="bi bi-arrow-left"></i> Back
                         </a>
                     </div>

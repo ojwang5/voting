@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import PoliceUser, Position, Election, ElectionPosition, Candidate, Vote, AuditLog
+from django.utils.safestring import mark_safe
 
 class PoliceUserAdmin(UserAdmin):
     add_fieldsets = UserAdmin.add_fieldsets + (
@@ -35,7 +36,15 @@ class ElectionPositionAdmin(admin.ModelAdmin):
 
 @admin.register(Election)
 class ElectionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'start_time', 'end_time', 'is_active_display', 'created_by', 'candidate_count', 'vote_count', 'election_status')
+    list_display = ('title', 'logo_preview', 'start_time', 'end_time', 'is_active_display', 'created_by', 'candidate_count', 'vote_count', 'election_status')
+    readonly_fields = ('created_by', 'candidate_count', 'vote_count', 'is_active_display', 'logo_preview')
+    
+    def logo_preview(self, obj):
+        if obj.logo:
+            return mark_safe(f'<img src="{obj.logo.url}" style="max-height: 50px; max-width: 100px;" />')
+        return "No logo"
+    logo_preview.short_description = 'Logo Preview'
+    logo_preview.allow_tags = True
     list_filter = ('start_time', 'created_by')
     date_hierarchy = 'start_time'
     search_fields = ('title', 'description', 'created_by__username')
@@ -70,12 +79,12 @@ class CandidateAdmin(admin.ModelAdmin):
 
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
-    list_display = ('voter', 'election', 'candidate', 'voted_at', 'ip_address')
-    list_filter = ('election', 'voted_at')
+    list_display = ('voter', 'election', 'position', 'candidate', 'voted_at', 'ip_address')
+    list_filter = ('election', 'position', 'voted_at')
     date_hierarchy = 'voted_at'
-    raw_id_fields = ('voter', 'election', 'candidate')
-    search_fields = ('voter__username', 'candidate__name', 'election__title')
-    readonly_fields = ('voter', 'election', 'candidate', 'voted_at', 'ip_address')
+    raw_id_fields = ('voter', 'election', 'candidate', 'position')
+    search_fields = ('voter__username', 'candidate__name', 'election__title', 'position__name')
+    readonly_fields = ('voter', 'election', 'candidate', 'position', 'voted_at', 'ip_address')
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):

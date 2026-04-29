@@ -2,6 +2,8 @@
 
 {% block title %}Admin Dashboard - VotingHub{% endblock %}
 
+
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-12">
@@ -10,7 +12,7 @@
                 <i class="bi bi-gear me-2 text-warning"></i>
                 Admin Dashboard
             </h1>
-            <a href="{% url 'polls:index' %}" class="btn btn-outline-secondary">
+<a href="{% url 'polls:dashboard' %}" class="btn btn-voter-view">
                 <i class="bi bi-house"></i> Voter View
             </a>
         </div>
@@ -57,6 +59,7 @@
                     <div class="card h-100 border-start border-warning border-4 hover-shadow">
                         <div class="card-body text-center">
                             <i class="bi bi-shield-person fs-1 text-warning mb-3"></i>
+                            <i class="bi bi-people me-2 text-info"></i>
                             <h5 class="card-title">Voters</h5>
                             <p class="card-text text-muted">Manage voters</p>
                             <span class="badge bg-warning">{{ voters_count|default:0 }}</span>
@@ -107,7 +110,7 @@
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="{% url 'polls:bulk_register_voters' %}" class="btn btn-outline-warning w-100 py-3">
+<a href="{% url 'polls:bulk_register_voters' %}" class="btn btn-bulk-upload w-100 py-3">
                                     <i class="bi bi-upload d-block fs-4 mb-2"></i>
                                     Bulk Upload
                                 </a>
@@ -126,6 +129,164 @@
                 </div>
             </div>
         </div>
+
+        {% if active_elections_list %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-lightning me-2"></i>Active Elections ({{ active_elections_list|length }})</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            {% for election in active_elections_list %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold text-primary">{{ election.title }}</h6>
+                                        <p class="card-text text-muted small">{{ election.description|truncatewords:10 }}</p>
+                                        <div class="mb-2">
+                                            {% for pos in election.positions.all %}
+                                                <span class="badge bg-info mb-1">{{ pos.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="d-flex justify-content-between small text-muted mb-2">
+                                            <span><i class="bi bi-play text-success"></i> {{ election.start_time|date:"M d, Y H:i" }} EAT</span>
+                                            <span><i class="bi bi-stop text-danger"></i> {{ election.end_time|date:"M d, Y H:i" }} EAT</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'polls:results' election.id %}" class="btn btn-sm btn-outline-success flex-fill">
+                                                <i class="bi bi-bar-chart"></i> Results
+                                            </a>
+                                            <a href="{% url 'polls:admin_election_voters' election.id %}" class="btn btn-sm btn-outline-info flex-fill">
+                                                <i class="bi bi-people"></i> Voters
+                                            </a>
+                                            {% if is_superadmin %}
+                                            <a href="{% url 'polls:edit_election' election.id %}" class="btn btn-sm btn-outline-primary flex-fill">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if upcoming_elections %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Upcoming Elections ({{ upcoming_elections|length }})</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            {% for election in upcoming_elections %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100 border-warning">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold text-warning">{{ election.title }}</h6>
+                                        <p class="card-text text-muted small">{{ election.description|truncatewords:10 }}</p>
+                                        <div class="mb-2">
+                                            {% for pos in election.positions.all %}
+                                                <span class="badge bg-info mb-1">{{ pos.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="alert alert-warning py-2 mb-2 small">
+                                            <i class="bi bi-clock me-1"></i> Starts: {{ election.start_time|date:"M d, Y H:i" }} EAT
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'polls:admin_election_voters' election.id %}" class="btn btn-sm btn-outline-info flex-fill">
+                                                <i class="bi bi-people"></i> Voters
+                                            </a>
+                                            {% if is_superadmin %}
+                                            <a href="{% url 'polls:edit_election' election.id %}" class="btn btn-sm btn-outline-primary flex-fill">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if ended_elections_list %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Past Elections ({{ ended_elections_list|length }})</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            {% for election in ended_elections_list %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold">{{ election.title }}</h6>
+                                        <p class="card-text text-muted small">{{ election.description|truncatewords:10 }}</p>
+                                        <div class="mb-2">
+                                            {% for pos in election.positions.all %}
+                                                <span class="badge bg-info mb-1">{{ pos.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="small text-muted mb-2">
+                                            <i class="bi bi-stop text-danger"></i> Ended: {{ election.end_time|date:"M d, Y H:i" }} EAT
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="{% url 'polls:results' election.id %}" class="btn btn-sm btn-outline-primary flex-fill">
+                                                <i class="bi bi-bar-chart"></i> Results
+                                            </a>
+                                            <a href="{% url 'polls:admin_election_voters' election.id %}" class="btn btn-sm btn-outline-info flex-fill">
+                                                <i class="bi bi-people"></i> Voters
+                                            </a>
+                                            {% if is_superadmin %}
+                                            <a href="{% url 'polls:edit_election' election.id %}" class="btn btn-sm btn-outline-secondary flex-fill">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not active_elections_list and not upcoming_elections and not ended_elections_list %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-calendar-x display-1 text-muted mb-4"></i>
+                        <h4 class="text-muted mb-3">No Elections Available</h4>
+                        <p class="text-muted">There are no scheduled elections yet.</p>
+                        {% if is_superadmin %}
+                        <a href="{% url 'polls:create_election' %}" class="btn btn-success btn-lg mt-3">
+                            <i class="bi bi-plus-circle"></i> Create Election
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="row">
             <div class="col-12">

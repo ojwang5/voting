@@ -2,6 +2,8 @@
 
 {% block title %}Manage Elections - VotingHub{% endblock %}
 
+
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-12">
@@ -16,7 +18,7 @@
                     <i class="bi bi-plus-circle"></i> Create Election
                 </a>
                 {% endif %}
-                <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary">
+<a href="{% url 'polls:admin_dashboard' %}" class="btn btn-back-dashboard">
                     <i class="bi bi-arrow-left"></i> Dashboard
                 </a>
             </div>
@@ -52,15 +54,26 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% for pos in election.positions.all %}
-                                            <span class="badge bg-info mb-1">{{ pos.name }}</span>
+{% for pos in election.positions.all %}
+                                            <span class="badge bg-info mb-1 d-inline-flex align-items-center">
+                                                {{ pos.name }}
+                                                {% if is_superadmin %}
+                                                    <form method="post" action="{% url 'polls:delete_election_position' election.id pos.id %}" style="display:inline;" class="ms-1" onsubmit="return confirm('Remove {{ pos.name }} from {{ election.title }}?')">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1 border-0 bg-transparent p-0" style="line-height:1;" title="Remove position">
+                                                            <i class="bi bi-x-lg"></i>
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </span>
                                         {% endfor %}
+
                                     </td>
                                     <td>
                                         <small>
-                                            <i class="bi bi-play text-success"></i> {{ election.start_time|date:"M d, Y H:i" }}
+                                            <i class="bi bi-play text-success"></i> {{ election.start_time|date:"M d, Y H:i" }} EAT
                                             <br>
-                                            <i class="bi bi-stop text-danger"></i> {{ election.end_time|date:"M d, Y H:i" }}
+                                            <i class="bi bi-stop text-danger"></i> {{ election.end_time|date:"M d, Y H:i" }} EAT
                                         </small>
                                     </td>
                                     <td>
@@ -90,9 +103,9 @@
                                                 <i class="bi bi-people"></i>
                                             </a>
                                             <div class="dropdown">
-                                                <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i class="bi bi-download"></i>
-                                                </button>
+                                    <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle text-white" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-download"></i>
+                                    </button>
                                                 <ul class="dropdown-menu dropdown-menu-end">
                                                     <li><a class="dropdown-item" href="{% url 'polls:export_results_csv' election.id %}">
                                                         <i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV
@@ -105,6 +118,14 @@
                                                     </a></li>
                                                 </ul>
                                             </div>
+                                            {% if is_superadmin %}
+                                            <form method="post" action="{% url 'polls:delete_election' election.id %}" style="display:inline;" onsubmit="return confirm('Delete {{ election.title }}? This will also remove all associated candidates and votes.')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>
@@ -135,20 +156,31 @@
                             <div class="election-meta">
                                 <span class="election-meta-label">Positions:</span>
                                 <span class="election-meta-value">
-                                    {% for pos in election.positions.all %}
-                                        <span class="badge bg-info">{{ pos.name }}</span>
+{% for pos in election.positions.all %}
+                                        <span class="badge bg-info d-inline-flex align-items-center">
+                                            {{ pos.name }}
+                                            {% if is_superadmin %}
+                                                <form method="post" action="{% url 'polls:delete_election_position' election.id pos.id %}" style="display:inline;" class="ms-1" onsubmit="return confirm('Remove {{ pos.name }} from {{ election.title }}?')">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger ms-1 border-0 bg-transparent p-0" style="line-height:1;" title="Remove position">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </span>
                                     {% empty %}
                                         <span class="text-muted">—</span>
                                     {% endfor %}
+
                                 </span>
                             </div>
                             <div class="election-meta">
                                 <span class="election-meta-label">Duration:</span>
                                 <span class="election-meta-value">
                                     <small>
-                                        <i class="bi bi-play text-success"></i> {{ election.start_time|date:"M d, Y H:i" }}
+                                        <i class="bi bi-play text-success"></i> {{ election.start_time|date:"M d, Y H:i" }} EAT
                                         <br>
-                                        <i class="bi bi-stop text-danger"></i> {{ election.end_time|date:"M d, Y H:i" }}
+                                        <i class="bi bi-stop text-danger"></i> {{ election.end_time|date:"M d, Y H:i" }} EAT
                                     </small>
                                 </span>
                             </div>
@@ -179,7 +211,7 @@
                                     <i class="bi bi-people"></i> Voters
                                 </a>
                                 <div class="dropdown flex-fill">
-                                    <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle w-100 text-white" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="bi bi-download"></i> Export
                                     </button>
                                     <ul class="dropdown-menu w-100">
@@ -194,6 +226,14 @@
                                         </a></li>
                                     </ul>
                                 </div>
+                                {% if is_superadmin %}
+                                <form method="post" action="{% url 'polls:delete_election' election.id %}" class="flex-fill" style="display:inline;" onsubmit="return confirm('Delete {{ election.title }}? This will also remove all associated candidates and votes.')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100" title="Delete">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </form>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}

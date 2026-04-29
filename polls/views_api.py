@@ -35,13 +35,15 @@ def api_vote(request):
     if not election.is_voter_eligible(request.user):
         return Response({'error': 'Not eligible'}, status=status.HTTP_403_FORBIDDEN)
     
-    if Vote.objects.filter(voter=request.user, election=election).exists():
-        return Response({'error': 'Already voted'}, status=status.HTTP_400_BAD_REQUEST)
+    # Check per-position uniqueness
+    if Vote.objects.filter(voter=request.user, election=election, position=candidate.position).exists():
+        return Response({'error': f'Already voted for {candidate.position.name}'}, status=status.HTTP_400_BAD_REQUEST)
     
     Vote.objects.create(
         voter=request.user,
         election=election,
         candidate=candidate,
+        position=candidate.position,
         ip_address=request.META.get('REMOTE_ADDR')
     )
     
@@ -50,7 +52,7 @@ def api_vote(request):
         user=request.user,
         action='VOTE',
         ip_address=request.META.get('REMOTE_ADDR'),
-        details=f'API vote for {candidate.name} in {election.title}'
+        details=f'API vote for {candidate.name} ({candidate.position.name}) in {election.title}'
     )
     
     return Response({'message': 'Vote recorded successfully'}, status=status.HTTP_201_CREATED)

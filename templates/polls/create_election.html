@@ -3,7 +3,18 @@
 
 {% block title %}{% if election %}Edit{% else %}Create{% endif %} Election - VotingHub{% endblock %}
 
+
+
 {% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header {% if election %}bg-warning{% else %}bg-success{% endif %} text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-{% if election %}pencil{% else %}plus-circle{% endif %} me-2"></i>
+                    {% if election %}Edit{% else %}Create New{% endif %} Election
+                </h3>
+            </div>
 <div class="row justify-content-center">
     <div class="col-lg-10">
         <div class="card">
@@ -23,7 +34,7 @@
                     {% endfor %}
                 {% endif %}
 
-                <form method="post">
+                <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     
                     <div class="row g-3 mb-4">
@@ -39,6 +50,17 @@
                         <div class="col-12">
                             <label class="form-label">Description</label>
                             <textarea name="description" class="form-control" rows="2">{% if election %}{{ election.description }}{% endif %}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Election Logo (Optional)</label>
+                            {% if election.logo %}
+                                <div class="mb-3">
+                                    <img src="{{ election.logo.url }}" alt="Current logo" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                    <small class="text-muted d-block mt-1">Current logo: {{ election.logo.name }}</small>
+                                </div>
+                            {% endif %}
+                            <input type="file" name="logo" class="form-control" accept="image/*">
+                            <small class="text-muted">PNG, JPG, or GIF (recommended 300x150px)</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Positions *</label>
@@ -56,7 +78,6 @@
                             </select>
                             <small class="text-muted">Hold Ctrl/Cmd to select multiple positions</small>
                         </div>
-                    </div>
 
                     <div class="row g-3 mb-4">
                         <div class="col-12">
@@ -83,7 +104,6 @@
                                     <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Now
                                 </button>
                             </div>
-                        </div>
                     </div>
 
                     <div class="row g-3 mb-4">
@@ -106,45 +126,48 @@
                                    placeholder="e.g., Kampala, Central">
                             <small class="text-muted">Leave empty for all stations</small>
                         </div>
-                    </div>
 
                     <div class="d-flex flex-column flex-sm-row gap-3">
                         <button type="submit" class="btn btn-success btn-lg px-3 px-md-5">
                             <i class="bi bi-check-lg"></i> 
                             {% if election %}Save Changes{% else %}Create Election{% endif %}
                         </button>
-                        <a href="{% url 'polls:admin_elections' %}" class="btn btn-outline-secondary btn-lg px-3 px-md-5">
+<a href="{% url 'polls:admin_elections' %}" class="btn btn-back-dashboard btn-lg px-3 px-md-5">
                             <i class="bi bi-x-lg"></i> Cancel
                         </a>
                     </div>
                 </form>
             </div>
-        </div>
     </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function formatDate(d) {
+    return d.getFullYear() + '-' + 
+           String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+           String(d.getDate()).padStart(2, '0') + 'T' + 
+           String(d.getHours()).padStart(2, '0') + ':' + 
+           String(d.getMinutes()).padStart(2, '0');
+}
+
 function setDuration(duration) {
     const startInput = document.querySelector('input[name="start_time"]');
     const endInput = document.querySelector('input[name="end_time"]');
-    const now = new Date();
     
-    let endDate = new Date(now);
+    let baseDate;
+    if (startInput.value) {
+        baseDate = new Date(startInput.value);
+    } else {
+        baseDate = new Date();
+        startInput.value = formatDate(baseDate);
+    }
+    
+    let endDate = new Date(baseDate);
     if (duration === '1h') endDate.setHours(endDate.getHours() + 1);
     else if (duration === '24h') endDate.setDate(endDate.getDate() + 1);
     else if (duration === '7d') endDate.setDate(endDate.getDate() + 7);
     
-    const formatDate = (d) => {
-        return d.getFullYear() + '-' + 
-               String(d.getMonth() + 1).padStart(2, '0') + '-' + 
-               String(d.getDate()).padStart(2, '0') + 'T' + 
-               String(d.getHours()).padStart(2, '0') + ':' + 
-               String(d.getMinutes()).padStart(2, '0');
-    };
-    
-    if (!startInput.value) startInput.value = formatDate(now);
     endInput.value = formatDate(endDate);
 }
 
@@ -155,17 +178,8 @@ function resetTimes() {
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    const formatDate = (d) => {
-        return d.getFullYear() + '-' + 
-               String(d.getMonth() + 1).padStart(2, '0') + '-' + 
-               String(d.getDate()).padStart(2, '0') + 'T' + 
-               String(d.getHours()).padStart(2, '0') + ':' + 
-               String(d.getMinutes()).padStart(2, '0');
-    };
-    
     startInput.value = formatDate(now);
     endInput.value = formatDate(tomorrow);
 }
 </script>
 {% endblock %}
-

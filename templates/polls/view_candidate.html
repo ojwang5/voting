@@ -73,7 +73,7 @@
                             </li>
                             <li class="mb-2">
                                 <strong>Election Period:</strong>
-                                <span class="text-muted">{{ election.start_time|date:"M d, Y H:i" }} - {{ election.end_time|date:"M d, Y H:i" }}</span>
+                                {{ election.start_time|date:"M d, Y H:i" }} EAT - {{ election.end_time|date:"M d, Y H:i" }} EAT
                             </li>
                             {% if is_admin %}
                                 <li class="mb-2">

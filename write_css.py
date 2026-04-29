@@ -1,4 +1,6 @@
-/* Modern Voting System Styles - Enhanced UX */
+import os
+
+css = r'''/* Modern Voting System Styles - Enhanced UX */
 :root {
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
@@ -634,3 +636,9 @@ body {
     width: auto !important;
   }
 }
+'''
+
+with open('static/polls/css/modern.css', 'w', encoding='utf-8') as f:
+    f.write(css)
+
+print('CSS written successfully')

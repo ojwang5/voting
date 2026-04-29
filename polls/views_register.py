@@ -5,7 +5,7 @@ from django.conf import settings
 
 def register(request):
     if request.user.is_authenticated:
-        return redirect('polls:index')
+        return redirect('polls:dashboard')
     
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -31,9 +31,11 @@ def register(request):
             user.set_password(password)
             user.must_change_password = False
             user.save()
+            from .views_admin import auto_assign_elections
+            auto_assign_elections(user, registered_by=user)
             login(request, user)
             messages.success(request, 'Registration successful! Welcome to VotingHub.')
-            return redirect('polls:index')
+            return redirect('polls:dashboard')
         else:
             for field, errors in form.errors.items():
                 for error in errors:

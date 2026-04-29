@@ -3,7 +3,8 @@ from django.db import models
 from django.utils import timezone
 
 class PoliceUser(AbstractUser):
-    force_number = models.IntegerField(
+    force_number = models.CharField(
+        max_length=50,
         unique=True,
         help_text="Force Number"
     )
@@ -57,6 +58,7 @@ class Election(models.Model):
     eligible_ranks = models.CharField(max_length=500, blank=True, help_text="Comma-separated ranks")
     eligible_stations = models.CharField(max_length=500, blank=True, help_text="Comma-separated stations")
     created_by = models.ForeignKey(PoliceUser, on_delete=models.CASCADE, related_name='created_elections')
+    logo = models.ImageField(upload_to='election_logos/', blank=True, null=True)
 
     @property
     def is_active(self):
@@ -112,12 +114,36 @@ class Election(models.Model):
         now = timezone.now()
         if now < self.start_time:
             delta = self.start_time - now
-            return f"Starts in {delta.days}d {delta.seconds // 3600}h"
+            prefix = "Starts in"
         elif now <= self.end_time:
             delta = self.end_time - now
-            return f"Closes in {delta.days}d {delta.seconds // 3600}h"
+            prefix = "Closes in"
         else:
             return "Ended"
+
+        total_seconds = int(delta.total_seconds())
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        parts = []
+        if days > 0:
+            parts.append(f"{days}d")
+            parts.append(f"{hours}h")
+            parts.append(f"{minutes}m")
+            parts.append(f"{seconds}s")
+        elif hours > 0:
+            parts.append(f"{hours}h")
+            parts.append(f"{minutes}m")
+            parts.append(f"{seconds}s")
+        elif minutes > 0:
+            parts.append(f"{minutes}m")
+            parts.append(f"{seconds}s")
+        else:
+            parts.append(f"{seconds}s")
+
+        return f"{prefix} {' '.join(parts)}"
 
     @property
     def seconds_until_start(self):
@@ -148,8 +174,18 @@ class ElectionPosition(models.Model):
 
 class Candidate(models.Model):
     name = models.CharField(max_length=200)
-    force_number = models.IntegerField()
-    rank = models.CharField(max_length=50)
+    force_number = models.CharField(max_length=50)
+    rank = models.CharField(
+        max_length=50,
+        choices=[
+            ('CONSTABLE', 'Constable'),
+            ('CORPORAL', 'Corporal'),
+            ('SERGEANT', 'Sergeant'),
+            ('INSPECTOR', 'Inspector'),
+            ('ASP', 'Assistant Superintendent of Police'),
+           
+        ]
+    )
     photo = models.ImageField(upload_to='candidates/', blank=True, null=True)
     biography = models.TextField(blank=True, help_text="Short manifesto")
     position = models.ForeignKey(Position, on_delete=models.CASCADE)
@@ -167,15 +203,16 @@ class Vote(models.Model):
     voter = models.ForeignKey(PoliceUser, on_delete=models.CASCADE, related_name='votes')
     election = models.ForeignKey(Election, on_delete=models.CASCADE)
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE)
+    position = models.ForeignKey(Position, on_delete=models.CASCADE)
     voted_at = models.DateTimeField(default=timezone.now)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
 
     class Meta:
-        unique_together = ('voter', 'election')
+        unique_together = ('voter', 'election', 'position')
         ordering = ['-voted_at']
 
     def __str__(self):
-        return f"{self.voter.force_number} -> {self.candidate.name} ({self.election})"
+        return f"{self.voter.force_number} -> {self.candidate.name} ({self.position.name}) ({self.election})"
 
 class ElectionRegistration(models.Model):
     voter = models.ForeignKey(PoliceUser, on_delete=models.CASCADE, related_name='election_registrations')

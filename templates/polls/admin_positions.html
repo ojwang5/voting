@@ -2,6 +2,8 @@
 
 {% block title %}Manage Positions - VotingHub{% endblock %}
 
+
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -10,7 +12,7 @@
                 <i class="bi bi-building me-2 text-primary"></i>
                 Election Positions
             </h1>
-            <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary">
+<a href="{% url 'polls:admin_dashboard' %}" class="btn btn-back-dashboard">
                 <i class="bi bi-arrow-left"></i> Back to Dashboard
             </a>
         </div>
@@ -66,9 +68,12 @@
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         {% if position.election_set.count == 0 and position.candidate_set.count == 0 %}
-                                            <a href="{% url 'polls:admin_position_delete' position.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this position?')">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
+                                            <form method="post" action="{% url 'polls:admin_position_delete' position.id %}" style="display:inline;" onsubmit="return confirm('Delete this position?')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                         {% endif %}
                                         {% endif %}
                                     </td>

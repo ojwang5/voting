@@ -72,7 +72,7 @@ class VoteForm(forms.Form):
         self.fields['candidate'].queryset = election.candidates.all()
 
 class PoliceUserRegistrationForm(forms.ModelForm):
-    force_number = forms.IntegerField(label='Force Number')
+    force_number = forms.CharField(label='Force Number', max_length=50)
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput(), required=False)
     password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput(), required=False)
 
@@ -101,7 +101,7 @@ class PoliceUserEditForm(forms.ModelForm):
         }
 
 class PasswordResetForm(forms.Form):
-    force_number = forms.IntegerField(label='Force Number')
+    force_number = forms.CharField(label='Force Number', max_length=50)
     phone = forms.CharField(label='Registered Phone', max_length=15)
     
     def clean(self):
@@ -154,6 +154,33 @@ class ChangePasswordForm(forms.Form):
             raise forms.ValidationError('New passwords do not match.')
         if not self.user.check_password(cleaned_data.get('current_password')):
             raise forms.ValidationError('Current password is incorrect.')
+        return cleaned_data
+
+
+class AdminChangePasswordForm(forms.Form):
+    new_password = forms.CharField(
+        label='New Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        min_length=8,
+        help_text='Minimum 8 characters.'
+    )
+    confirm_password = forms.CharField(
+        label='Confirm Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    force_change = forms.BooleanField(
+        label='Force password change on next login',
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_password = cleaned_data.get('confirm_password')
+        if new_password and confirm_password and new_password != confirm_password:
+            raise forms.ValidationError('Passwords do not match.')
         return cleaned_data
 
 

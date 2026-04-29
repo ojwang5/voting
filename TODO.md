@@ -1,34 +1,37 @@
-# Voting System Enhancement Tasks
+# Election Logo Feature Implementation
 
-## Task 1: Make Scheduled Elections Accessible to Registered Voters
-- [x] Add `election_detail` view in `polls/views.py` (already exists as `detail`)
-- [x] Add URL route for election detail (already exists)
-- [x] Create `templates/polls/election_detail.html` (already exists as `detail.html`)
-- [x] Update `templates/polls/dashboard.html` with "View Details" link for upcoming elections
+## Plan Overview
+Add logo upload to election creation/edit form. Store logo on Election model. Display logo in PDF/Word exports.
 
-## Task 2: Limit Election Admin Privileges
-- [x] Update decorators in `polls/views_admin.py` (ADMIN → view-only for elections, positions, candidates)
-- [x] Update `templates/polls/admin_dashboard.html` (hide create buttons for ADMIN)
-- [x] Update `templates/polls/admin_elections.html` (hide create/edit/delete for ADMIN)
-- [x] Update `templates/polls/admin_candidates.html` (hide create/edit/delete for ADMIN)
-- [x] Update `templates/polls/admin_positions.html` (make viewable for ADMIN)
+## Steps to Complete (Approved Plan)
 
-## Task 3: Remove Force Number Range Functionality
-- [x] Remove range from `polls/models.py` (already removed)
-- [x] Remove range from `polls/forms.py` (already removed)
-- [x] Generate and apply migration (no migration needed - already in sync)
+### 1. ✅ [DONE] Create this TODO.md
 
-## Task 4: Bulk Voter Registration (CSV & Excel)
-- [x] Add `openpyxl` to `requirements.txt`
-- [x] Create `BulkVoterUploadForm` in `polls/forms.py` (already exists)
-- [x] Add `bulk_register_voters` view in `polls/views_admin.py` (already exists)
-- [x] Add URL route in `polls/urls.py` (already exists)
-- [x] Create `templates/polls/bulk_register_voters.html`
-- [x] Update `templates/polls/admin_voters.html` with bulk upload button
-- [x] Update `templates/polls/admin_dashboard.html` with bulk upload link
+### 2. ✅ [DONE] Update models.py - logo field added, migrations run
 
-## Final Steps
-- [x] Run migrations (up to date - no changes needed)
-- [x] Install new requirements (openpyxl installed)
-- [x] Test all functionality (syntax checks passed on all key files)
+### 3. ✅ [DONE] Update create_election view - logo handling
+
+### 4. ✅ [DONE] Update edit_election view - logo handling
+
+### 5. ✅ [DONE] Update create_election.html template - logo field, preview, enctype
+
+### 6. ✅ [DONE] Update export_results_pdf - logo in PDF
+
+### 7. ✅ [DONE] Update export_results_docx - logo in DOCX
+
+### 8. ✅ [DONE] Update polls/admin.py - logo preview in Django admin
+
+### 9. ✅ [DONE] Run migrations
+
+### 10. Test - [PENDING]
+- Create election with logo upload.
+- Edit election, change logo.
+- Export PDF/DOCX → verify logo displays.
+- Check media/election_logos/ dir.
+
+### 11. Mark complete - [PENDING]
+- Update this TODO.md ✅
+- Remove from outstanding TODOs.
+
+**Feature fully implemented! Test and mark complete.**
 

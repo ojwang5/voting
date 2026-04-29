@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Manage Voters - {{ election.title }} - VotingHub{% endblock %}
+{% block title %}Manage Elections - {{ voter.get_full_name }} - VotingHub{% endblock %}
 
 
 
@@ -9,12 +9,12 @@
     <div class="col-lg-12">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
             <h1 class="h3 mb-0">
-                <i class="bi bi-people me-2 text-info"></i>
-                Election Voters
+                <i class="bi bi-check2-square me-2 text-info"></i>
+                Voter Elections
             </h1>
             <div>
-<a href="{% url 'polls:admin_elections' %}" class="btn btn-back-dashboard w-100 w-md-auto">
-                    <i class="bi bi-arrow-left"></i> Back to Elections
+<a href="{% url 'polls:admin_voters' %}" class="btn btn-back-dashboard w-100 w-md-auto">
+                    <i class="bi bi-arrow-left"></i> Back to Voters
                 </a>
             </div>
         </div>
@@ -22,25 +22,21 @@
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    {{ election.title }}
+                    <i class="bi bi-shield-person me-2"></i>
+                    {{ voter.get_full_name }}
                 </h5>
             </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <p class="mb-1"><strong>Positions:</strong>
-                            {% for pos in election.positions.all %}
-                                <span class="badge bg-info">{{ pos.name }}</span>
-                            {% endfor %}
-                        </p>
-                        <p class="mb-1"><strong>Start:</strong> {{ election.start_time|date:"M d, Y H:i" }} EAT</p>
-                        <p class="mb-0"><strong>End:</strong> {{ election.end_time|date:"M d, Y H:i" }} EAT</p>
+                        <p class="mb-1"><strong>Force Number:</strong> <code>{{ voter.force_number }}</code></p>
+                        <p class="mb-1"><strong>Rank:</strong> <span class="badge bg-secondary">{{ voter.get_rank_display }}</span></p>
+                        <p class="mb-0"><strong>Station:</strong> {{ voter.station }}</p>
                     </div>
                     <div class="col-md-6 text-center text-md-end">
                         <div class="d-inline-block text-center px-3">
                             <h3 class="text-success mb-0">{{ registered_count }}</h3>
-                            <small class="text-muted">Registered Voters</small>
+                            <small class="text-muted">Registered Elections</small>
                         </div>
                         <div class="d-inline-block text-center px-3">
                             <h3 class="text-info mb-0">{{ eligible_count }}</h3>
@@ -57,39 +53,43 @@
                     <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="bi bi-check-circle me-2"></i>
-                            Registered Voters ({{ registered_count }})
+                            Registered Elections ({{ registered_count }})
                         </h5>
                     </div>
                     <div class="card-body">
-                        {% if registered_voters %}
+                        {% if registered_elections %}
                             <div class="table-responsive">
                                 <table class="table table-hover table-sm">
                                     <thead>
                                         <tr>
-                                            <th>Force #</th>
-                                            <th>Name</th>
-                                            <th>Rank</th>
-                                            <th>Station</th>
+                                            <th>Title</th>
+                                            <th>Positions</th>
+                                            <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for voter in registered_voters %}
+                                        {% for election in registered_elections %}
                                         <tr>
-                                            <td><code>{{ voter.force_number }}</code></td>
-                                            <td>{{ voter.get_full_name }}</td>
-                                            <td><span class="badge bg-secondary">{{ voter.get_rank_display }}</span></td>
-                                            <td>{{ voter.station }}</td>
+                                            <td><strong>{{ election.title }}</strong></td>
                                             <td>
-                                                <form method="post" action="{% url 'polls:admin_reset_voter_election_votes' voter.id election.id %}" style="display:inline;" onsubmit="return confirm('Reset votes for {{ voter.get_full_name }} in this election? They will be able to vote again.')">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Reset Votes">
-                                                        <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-lg-inline">Reset</span>
-                                                    </button>
-                                                </form>
-                                                <a href="{% url 'polls:admin_unregister_voter_from_election' election.id voter.id %}" 
+                                                {% for pos in election.positions.all %}
+                                                    <span class="badge bg-info">{{ pos.name }}</span>
+                                                {% endfor %}
+                                            </td>
+                                            <td>
+                                                {% if election.is_open %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% elif election.start_time > now %}
+                                                    <span class="badge bg-warning">Upcoming</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Ended</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'polls:admin_unregister_voter_from_election_by_voter' voter.id election.id %}"
                                                    class="btn btn-sm btn-outline-danger"
-                                                   onclick="return confirm('Unregister {{ voter.get_full_name }} from this election?')">
+                                                   onclick="return confirm('Unregister {{ voter.get_full_name }} from {{ election.title }}?')">
                                                     <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">Remove</span>
                                                 </a>
                                             </td>
@@ -101,7 +101,7 @@
                         {% else %}
                             <div class="text-center py-4">
                                 <i class="bi bi-inbox display-4 text-muted mb-3"></i>
-                                <p class="text-muted">No voters registered for this election yet.</p>
+                                <p class="text-muted">No elections registered yet.</p>
                             </div>
                         {% endif %}
                     </div>
@@ -112,32 +112,42 @@
                 <div class="card border-info h-100">
                     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
-                            <i class="bi bi-person-plus me-2"></i>
-                            Eligible Voters ({{ eligible_count }})
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Eligible Elections ({{ eligible_count }})
                         </h5>
                     </div>
                     <div class="card-body">
-                        {% if eligible_voters %}
+                        {% if eligible_unregistered %}
                             <div class="table-responsive">
                                 <table class="table table-hover table-sm">
                                     <thead>
                                         <tr>
-                                            <th>Force #</th>
-                                            <th>Name</th>
-                                            <th>Rank</th>
-                                            <th>Station</th>
+                                            <th>Title</th>
+                                            <th>Positions</th>
+                                            <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for voter in eligible_voters %}
+                                        {% for election in eligible_unregistered %}
                                         <tr>
-                                            <td><code>{{ voter.force_number }}</code></td>
-                                            <td>{{ voter.get_full_name }}</td>
-                                            <td><span class="badge bg-secondary">{{ voter.get_rank_display }}</span></td>
-                                            <td>{{ voter.station }}</td>
+                                            <td><strong>{{ election.title }}</strong></td>
                                             <td>
-                                                <a href="{% url 'polls:admin_register_voter_to_election' election.id voter.id %}" 
+                                                {% for pos in election.positions.all %}
+                                                    <span class="badge bg-info">{{ pos.name }}</span>
+                                                {% endfor %}
+                                            </td>
+                                            <td>
+                                                {% if election.is_open %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% elif election.start_time > now %}
+                                                    <span class="badge bg-warning">Upcoming</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Ended</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'polls:admin_register_voter_to_election_by_voter' voter.id election.id %}"
                                                    class="btn btn-sm btn-outline-success">
                                                     <i class="bi bi-plus-circle"></i> <span class="d-none d-lg-inline">Register</span>
                                                 </a>
@@ -150,7 +160,7 @@
                         {% else %}
                             <div class="text-center py-4">
                                 <i class="bi bi-check-all display-4 text-muted mb-3"></i>
-                                <p class="text-muted">All eligible voters are already registered.</p>
+                                <p class="text-muted">All eligible elections are already registered.</p>
                             </div>
                         {% endif %}
                     </div>

@@ -2,6 +2,8 @@
 
 {% block title %}Manage Candidates - VotingHub{% endblock %}
 
+
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-12">
@@ -16,7 +18,7 @@
                     <i class="bi bi-plus-circle"></i> Add Candidate
                 </a>
                 {% endif %}
-                <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary">
+<a href="{% url 'polls:admin_dashboard' %}" class="btn btn-back-dashboard">
                     <i class="bi bi-arrow-left"></i> Dashboard
                 </a>
             </div>
@@ -27,7 +29,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">All Candidates ({{ candidates.count }})</h5>
                     <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle text-white" data-bs-toggle="dropdown">
                             <i class="bi bi-download me-1"></i> Export
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -82,9 +84,12 @@
                                             <a href="{% url 'polls:admin_edit_candidate' candidate.id %}" class="btn btn-outline-primary" title="Edit">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="{% url 'polls:admin_delete_candidate' candidate.id %}" class="btn btn-outline-danger" title="Delete" onclick="return confirm('Delete {{ candidate.name }}?')">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
+                                            <form method="post" action="{% url 'polls:admin_delete_candidate' candidate.id %}" style="display:inline;" onsubmit="return confirm('Delete {{ candidate.name }}?')">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                             {% endif %}
                                         </div>
                                     </td>

@@ -5,7 +5,8 @@ from .views_api import ElectionList, api_vote
 app_name = 'polls'
 
 urlpatterns = [
-    path('', views.dashboard, name='index'),
+    path('', views.home, name='home'),
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('elections/', views.dashboard, name='elections'),
     
     path('login/', views.user_login, name='login'),
@@ -32,7 +33,10 @@ urlpatterns = [
     path('admin/elections/create/', views_admin.create_election, name='create_election'),
     path('admin/elections/<int:election_id>/edit/', views_admin.edit_election, name='edit_election'),
     path('admin/elections/<int:election_id>/toggle/', views_admin.toggle_election_status, name='toggle_election_status'),
+
     path('admin/elections/<int:election_id>/delete/', views_admin.delete_election, name='delete_election'),
+    path('admin/elections/<int:election_id>/positions/<int:position_id>/delete/', views_admin.delete_election_position, name='delete_election_position'),
+
     path('admin/elections/<int:election_id>/voters/', views_admin.admin_election_voters, name='admin_election_voters'),
     path('admin/elections/<int:election_id>/voters/<int:voter_id>/register/', views_admin.admin_register_voter_to_election, name='admin_register_voter_to_election'),
     path('admin/elections/<int:election_id>/voters/<int:voter_id>/unregister/', views_admin.admin_unregister_voter_from_election, name='admin_unregister_voter_from_election'),
@@ -43,6 +47,12 @@ urlpatterns = [
     path('admin/voters/<int:voter_id>/edit/', views_admin.admin_edit_voter, name='admin_edit_voter'),
     path('admin/voters/<int:voter_id>/delete/', views_admin.admin_delete_voter, name='admin_delete_voter'),
     path('admin/voters/<int:voter_id>/reset-password/', views_admin.admin_reset_voter_password, name='admin_reset_voter_password'),
+    path('admin/voters/<int:voter_id>/change-password/', views_admin.admin_change_voter_password, name='admin_change_voter_password'),
+    path('admin/voters/<int:voter_id>/elections/', views_admin.admin_voter_elections, name='admin_voter_elections'),
+    path('admin/voters/<int:voter_id>/elections/<int:election_id>/register/', views_admin.admin_register_voter_to_election_by_voter, name='admin_register_voter_to_election_by_voter'),
+    path('admin/voters/<int:voter_id>/elections/<int:election_id>/unregister/', views_admin.admin_unregister_voter_from_election_by_voter, name='admin_unregister_voter_from_election_by_voter'),
+    path('admin/voters/<int:voter_id>/reset-votes/', views_admin.admin_reset_voter_votes, name='admin_reset_voter_votes'),
+    path('admin/voters/<int:voter_id>/elections/<int:election_id>/reset-votes/', views_admin.admin_reset_voter_election_votes, name='admin_reset_voter_election_votes'),
     
     path('admin/register-candidate/', views_admin.admin_register_candidate, name='admin_register_candidate'),
     path('admin/candidates/', views_admin.admin_candidates, name='admin_candidates'),

@@ -2,6 +2,8 @@
 
 {% block title %}Register Candidate - VotingHub{% endblock %}
 
+
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -28,7 +30,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Force Number *</label>
-                            <input type="number" name="force_number" class="form-control" required>
+                            <input type="text" name="force_number" class="form-control" required maxlength="50">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Rank *</label>
@@ -78,7 +80,7 @@
                         <button type="submit" class="btn btn-info btn-lg flex-grow-1">
                             <i class="bi bi-check-circle"></i> Register Candidate
                         </button>
-                        <a href="{% url 'polls:admin_dashboard' %}" class="btn btn-outline-secondary btn-lg">
+<a href="{% url 'polls:admin_dashboard' %}" class="btn btn-back-dashboard btn-lg">
                             <i class="bi bi-arrow-left"></i> Back
                         </a>
                     </div>

@@ -33,6 +33,7 @@
                         <h6 class="card-title text-primary mb-2">
                             <i class="bi bi-person-badge me-2"></i>Profile
                         </h6>
+                        <p class="mb-1"><strong>Name:</strong> {{ user_profile.get_full_name }}</p>
                         <p class="mb-1"><strong>Force #:</strong> {{ user_profile.force_number }}</p>
                         <p class="mb-1"><strong>Rank:</strong> {{ user_profile.get_rank_display }}</p>
                         <p class="mb-1"><strong>Station:</strong> {{ user_profile.station }}</p>
@@ -116,9 +117,13 @@
                                             <small class="text-muted"><i class="bi bi-clock"></i> Closes in: <span id="timer-{{ election.id }}">--</span></small>
                                         </div>
                                         <hr>
-                                        {% if election.id in voted_elections %}
+                                        {% if election.id in fully_voted_elections %}
                                             <a href="{% url 'polls:results' election.id %}" class="btn btn-warning w-100">
                                                 <i class="bi bi-bar-chart"></i> View Results
+                                            </a>
+                                        {% elif election.id in voted_elections %}
+                                            <a href="{% url 'polls:vote' election.id %}" class="btn btn-info w-100">
+                                                <i class="bi bi-check-circle"></i> Continue Voting
                                             </a>
                                         {% else %}
                                             <a href="{% url 'polls:vote' election.id %}" class="btn btn-success w-100">
@@ -164,7 +169,7 @@
                                         <hr>
                                         <div class="alert alert-warning py-2 mb-2 small">
                                             <i class="bi bi-info-circle me-1"></i>
-                                            Opens: {{ election.start_time|date:"M d, Y H:i" }}
+                                            Opens: {{ election.start_time|date:"M d, Y H:i" }} EAT
                                         </div>
                                         <a href="{% url 'polls:detail' election.id %}" class="btn btn-outline-warning w-100">
                                             <i class="bi bi-eye"></i> View Details
@@ -205,7 +210,7 @@
                                         <hr>
                                         <div class="alert alert-info py-2 mb-2 small">
                                             <i class="bi bi-info-circle me-1"></i>
-                                            Opens: {{ election.start_time|date:"M d, Y H:i" }}
+                                            Opens: {{ election.start_time|date:"M d, Y H:i" }} EAT
                                         </div>
                                         <a href="{% url 'polls:register_for_election' election.id %}" class="btn btn-info w-100 text-white">
                                             <i class="bi bi-plus-circle"></i> Register for Election
@@ -303,7 +308,7 @@ function updateTimers() {
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
         
         if (days > 0) {
-            display.textContent = days + 'd ' + hours + 'h ' + minutes + 'm';
+            display.textContent = days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
         } else if (hours > 0) {
             display.textContent = hours + 'h ' + minutes + 'm ' + seconds + 's';
         } else {
@@ -316,3 +321,4 @@ updateTimers();
 setInterval(updateTimers, 1000);
 </script>
 {% endblock %}
+
