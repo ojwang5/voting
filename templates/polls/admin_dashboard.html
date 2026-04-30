@@ -141,8 +141,11 @@
                         <div class="row g-3">
                             {% for election in active_elections_list %}
                             <div class="col-md-6 col-lg-4">
-                                <div class="card h-100">
+<div class="card h-100">
                                     <div class="card-body">
+                                        {% if election.logo %}
+                                            <img src="{{ election.logo.url }}" alt="Logo" class="mb-2" style="max-height:50px;max-width:100%;height:auto;">
+                                        {% endif %}
                                         <h6 class="card-title fw-bold text-primary">{{ election.title }}</h6>
                                         <p class="card-text text-muted small">{{ election.description|truncatewords:10 }}</p>
                                         <div class="mb-2">
@@ -189,8 +192,11 @@
                         <div class="row g-3">
                             {% for election in upcoming_elections %}
                             <div class="col-md-6 col-lg-4">
-                                <div class="card h-100 border-warning">
+<div class="card h-100 border-warning">
                                     <div class="card-body">
+                                        {% if election.logo %}
+                                            <img src="{{ election.logo.url }}" alt="Logo" class="mb-2" style="max-height:50px;max-width:100%;height:auto;">
+                                        {% endif %}
                                         <h6 class="card-title fw-bold text-warning">{{ election.title }}</h6>
                                         <p class="card-text text-muted small">{{ election.description|truncatewords:10 }}</p>
                                         <div class="mb-2">
@@ -233,8 +239,11 @@
                         <div class="row g-3">
                             {% for election in ended_elections_list %}
                             <div class="col-md-6 col-lg-4">
-                                <div class="card h-100">
+<div class="card h-100">
                                     <div class="card-body">
+                                        {% if election.logo %}
+                                            <img src="{{ election.logo.url }}" alt="Logo" class="mb-2" style="max-height:50px;max-width:100%;height:auto;">
+                                        {% endif %}
                                         <h6 class="card-title fw-bold">{{ election.title }}</h6>
                                         <p class="card-text text-muted small">{{ election.description|truncatewords:10 }}</p>
                                         <div class="mb-2">

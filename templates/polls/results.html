@@ -8,6 +8,9 @@
 <div class="row justify-content-center">
     <div class="col-lg-10">
         <div class="text-center mb-4">
+            {% if election.logo %}
+                <img src="{{ election.logo.url }}" alt="{{ election.title }} Logo" class="mb-3" style="max-height:120px;max-width:100%;height:auto;">
+            {% endif %}
             <h1 class="display-6 fw-bold">{{ election.title }}</h1>
             <p class="lead text-muted">{{ election.description }}</p>
             <div class="row justify-content-center">

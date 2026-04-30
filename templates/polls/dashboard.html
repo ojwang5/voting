@@ -99,13 +99,16 @@
                     <div class="row g-4">
                         {% for election in active_elections %}
                             <div class="col-md-6 col-lg-4">
-                                <div class="card h-100 {% if election.id in voted_elections %}border-warning{% endif %}">
+<div class="card h-100 {% if election.id in voted_elections %}border-warning{% endif %}">
                                     {% if election.id in voted_elections %}
                                         <div class="card-header bg-warning text-dark">
                                             <i class="bi bi-check-circle me-1"></i> You voted in this election
                                         </div>
                                     {% endif %}
                                     <div class="card-body">
+                                        {% if election.logo %}
+                                            <img src="{{ election.logo.url }}" alt="Logo" class="mb-2" style="max-height:50px;max-width:100%;height:auto;">
+                                        {% endif %}
                                         <h6 class="card-title fw-bold text-primary mb-2">{{ election.title }}</h6>
                                         <p class="card-text text-muted small mb-2">{{ election.description|truncatewords:10 }}</p>
                                         <div class="mb-2">
@@ -151,11 +154,14 @@
                     <div class="row g-4">
                         {% for election in upcoming_registered %}
                             <div class="col-md-6 col-lg-4">
-                                <div class="card h-100 border-warning">
+<div class="card h-100 border-warning">
                                     <div class="card-header bg-warning-subtle text-warning-emphasis small">
                                         <i class="bi bi-check-circle-fill me-1"></i> Registered
                                     </div>
                                     <div class="card-body">
+                                        {% if election.logo %}
+                                            <img src="{{ election.logo.url }}" alt="Logo" class="mb-2" style="max-height:50px;max-width:100%;height:auto;">
+                                        {% endif %}
                                         <h6 class="card-title fw-bold text-warning mb-2">{{ election.title }}</h6>
                                         <p class="card-text text-muted small mb-2">{{ election.description|truncatewords:10 }}</p>
                                         <div class="mb-2">
@@ -195,8 +201,11 @@
                     <div class="row g-4">
                         {% for election in upcoming_unregistered %}
                             <div class="col-md-6 col-lg-4">
-                                <div class="card h-100">
+<div class="card h-100">
                                     <div class="card-body">
+                                        {% if election.logo %}
+                                            <img src="{{ election.logo.url }}" alt="Logo" class="mb-2" style="max-height:50px;max-width:100%;height:auto;">
+                                        {% endif %}
                                         <h6 class="card-title fw-bold text-info mb-2">{{ election.title }}</h6>
                                         <p class="card-text text-muted small mb-2">{{ election.description|truncatewords:10 }}</p>
                                         <div class="mb-2">

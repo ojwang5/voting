@@ -8,7 +8,10 @@
         <div class="col-lg-8">
             <div class="card shadow-lg border-0 mb-5">
                 <div class="card-body p-5 text-center">
-                    <div class="election-hero mb-5">
+<div class="election-hero mb-5">
+                        {% if election.logo %}
+                            <img src="{{ election.logo.url }}" alt="{{ election.title }} Logo" class="mb-3" style="max-height:150px;max-width:100%;height:auto;">
+                        {% endif %}
                         <h1 class="display-4 fw-bold mb-3">{{ election.title }}</h1>
                         {% if election.description %}
                             <p class="lead text-muted mb-4">{{ election.description }}</p>

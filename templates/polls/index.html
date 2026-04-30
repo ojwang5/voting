@@ -67,9 +67,12 @@
         <div class="row g-4">
             {% for election in latest_elections %}
             <div class="col-lg-4 col-md-6">
-                <div class="card election-preview h-100">
+<div class="card election-preview h-100">
                     <div class="card-img-top bg-gradient-primary h-48 d-flex align-items-end p-4">
                         <div>
+                            {% if election.logo %}
+                                <img src="{{ election.logo.url }}" alt="Logo" class="mb-2" style="max-height:40px;max-width:100%;height:auto;">
+                            {% endif %}
                             <span class="badge bg-light text-dark mb-2">{{ election.position }}</span>
                             <h5 class="text-white mb-0">{{ election.title|truncatechars:40 }}</h5>
                         </div>

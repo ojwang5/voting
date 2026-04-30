@@ -48,7 +48,10 @@
                                     <div class="col-md-6 mb-3">
                                         <div class="form-check card p-3 h-100 border">
                                             <input class="form-check-input" type="checkbox" name="elections" value="{{ election.id }}" id="election_{{ election.id }}">
-                                            <label class="form-check-label w-100" for="election_{{ election.id }}">
+<label class="form-check-label w-100" for="election_{{ election.id }}">
+                                                {% if election.logo %}
+                                                    <img src="{{ election.logo.url }}" alt="Logo" class="mb-1" style="max-height:30px;max-width:100%;height:auto;">
+                                                {% endif %}
                                                 <strong class="d-block">{{ election.title }}</strong>
                                                 <small class="text-muted">
                                                     {{ election.start_time|date:"M d, Y H:i" }} EAT — {{ election.end_time|date:"M d, Y H:i" }} EAT
