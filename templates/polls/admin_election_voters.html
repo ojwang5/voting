@@ -80,7 +80,12 @@
                                             <td>{{ voter.get_full_name }}</td>
                                             <td><span class="badge bg-secondary">{{ voter.get_rank_display }}</span></td>
                                             <td>{{ voter.station }}</td>
-                                            <td>
+<td>
+                                                <a href="{% url 'polls:send_election_invitation' election.id voter.id %}" 
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   title="Send Invitation Email">
+                                                    <i class="bi bi-envelope"></i> <span class="d-none d-lg-inline">Invite</span>
+                                                </a>
                                                 <form method="post" action="{% url 'polls:admin_reset_voter_election_votes' voter.id election.id %}" style="display:inline;" onsubmit="return confirm('Reset votes for {{ voter.get_full_name }} in this election? They will be able to vote again.')">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-sm btn-outline-secondary" title="Reset Votes">

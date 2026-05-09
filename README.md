@@ -93,4 +93,4 @@ python manage.py test polls
 - **Class-based views** for standard CRUD
 
 Enjoy your voting system! 🚀
-
+africastalking sms api-key----atsk_1bd501f5fe3987b0d39fee490e5e91d26118fc3a2d1bb6d93a871dc8545792388a4cf03f

@@ -38,8 +38,9 @@ urlpatterns = [
     path('admin/elections/<int:election_id>/positions/<int:position_id>/delete/', views_admin.delete_election_position, name='delete_election_position'),
 
     path('admin/elections/<int:election_id>/voters/', views_admin.admin_election_voters, name='admin_election_voters'),
-    path('admin/elections/<int:election_id>/voters/<int:voter_id>/register/', views_admin.admin_register_voter_to_election, name='admin_register_voter_to_election'),
+path('admin/elections/<int:election_id>/voters/<int:voter_id>/register/', views_admin.admin_register_voter_to_election, name='admin_register_voter_to_election'),
     path('admin/elections/<int:election_id>/voters/<int:voter_id>/unregister/', views_admin.admin_unregister_voter_from_election, name='admin_unregister_voter_from_election'),
+    path('admin/elections/<int:election_id>/voters/<int:voter_id>/send-invitation/', views_admin.send_election_invitation, name='send_election_invitation'),
     
     path('admin/register-voter/', views_admin.admin_register_voter, name='admin_register_voter'),
     path('admin/register-voter/credentials/', views_admin.admin_voter_credentials, name='admin_voter_credentials'),

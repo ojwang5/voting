@@ -140,7 +140,10 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'widget_tweaks',
+
+
 ]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -153,3 +156,20 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 LOGIN_URL = '/polls/login/'
 LOGIN_REDIRECT_URL = '/polls/'
 LOGOUT_REDIRECT_URL = '/polls/login/'
+
+# Email configuration (using environment variables with sensible defaults)
+# For real-time email, use SMTP backend
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.sendgrid.net')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'apikey')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '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')  # IMPORTANT: Set SendGrid API Key here or via environment variable
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ojwangsamuel1@gmail.com')
+
+# Africa's Talking (SMS)
+# Set via environment variables. Keep empty to disable SMS sending safely.
+AT_USERNAME = os.getenv('AT_USERNAME', '')
+AT_API_KEY = os.getenv('AT_API_KEY', '')
+AT_FROM = os.getenv('AT_FROM', '')
+

@@ -4,18 +4,25 @@ from .models import PoliceUser, Position, Election, ElectionPosition, Candidate,
 from django.utils.safestring import mark_safe
 
 class PoliceUserAdmin(UserAdmin):
-    add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Police Force Details', {
-            'fields': ('force_number', 'rank', 'station', 'phone', 'role', 'is_active_voter', 'must_change_password', 'username'),
-        }),
-    )
-    fieldsets = UserAdmin.fieldsets + (
-        ('Police Force Details', {'fields': ('force_number', 'rank', 'station', 'phone', 'role', 'is_active_voter', 'must_change_password')}),
-    )
     list_display = ('username', 'force_number', 'rank', 'station', 'role', 'is_active', 'is_active_voter', 'must_change_password', 'date_joined')
     list_filter = ('rank', 'role', 'is_active_voter', 'is_staff', 'is_active')
     search_fields = ('username', 'force_number', 'first_name', 'last_name', 'email')
     ordering = ('-date_joined',)
+    
+    # Use simple fieldsets without adding extra fields that might cause issues
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+        ('Police Force Details', {'fields': ('force_number', 'rank', 'station', 'phone', 'role', 'is_active_voter', 'must_change_password')}),
+    )
+    
+    add_fieldsets = (
+        (None, {'fields': ('username', 'password1', 'password2')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Police Force Details', {'fields': ('force_number', 'rank', 'station', 'phone', 'role', 'is_active_voter', 'must_change_password')}),
+    )
 
 admin.site.register(PoliceUser, PoliceUserAdmin)
 

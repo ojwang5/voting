@@ -21,6 +21,9 @@ from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
+# Email helpers
+from .emails import send_voter_credentials_email, send_election_invitation_email, send_bulk_voter_credentials_email
+
 from .forms import PoliceUserRegistrationForm, PoliceUserEditForm, PositionForm, CandidateForm, BulkVoterUploadForm, AdminChangePasswordForm
 
 
@@ -44,14 +47,33 @@ def create_audit_log(user, action, details, request=None, target_model='', targe
 @user_passes_test(is_admin)
 def admin_dashboard(request):
     now = timezone.now()
+    
+    # Get elections by status
+    all_elections = Election.objects.prefetch_related('positions', 'candidates').all()
+    active_elections_list = []
+    upcoming_elections = []
+    ended_elections_list = []
+    
+    for election in all_elections:
+        status = election.status
+        if status == 'ACTIVE':
+            active_elections_list.append(election)
+        elif status == 'UPCOMING':
+            upcoming_elections.append(election)
+        else:  # ENDED
+            ended_elections_list.append(election)
+    
     return render(request, 'polls/admin_dashboard.html', {
         'positions_count': Position.objects.count(),
         'elections_count': Election.objects.count(),
-        'active_elections': Election.objects.filter(start_time__lte=now, end_time__gte=now).count(),
+        'active_elections': len(active_elections_list),
         'candidates_count': Candidate.objects.count(),
         'voters_count': PoliceUser.objects.filter(role='VOTER').count(),
         'is_admin': request.user.role == 'ADMIN',
         'is_superadmin': request.user.role == 'SUPER_ADMIN',
+        'active_elections_list': active_elections_list,
+        'upcoming_elections': upcoming_elections,
+        'ended_elections_list': ended_elections_list,
     })
 
 
@@ -263,11 +285,24 @@ def admin_register_voter(request):
             voter.save()
             create_audit_log(request.user, AuditLog.ACTION_VOTER_CREATE,
                 f'Registered voter: {voter.username} (Force #{voter.force_number})', request, 'PoliceUser', voter.id)
+            
+            # Store credentials in session and attempt to send email
             request.session['registered_voter_credentials'] = {
                 'username': voter.username, 'password': auto_password,
                 'force_number': voter.force_number, 'full_name': voter.get_full_name()
             }
-            messages.success(request, f'Voter {voter.username} registered successfully!')
+            
+            # Attempt to send credentials email
+            email_sent = send_voter_credentials_email(voter, auto_password)
+            if email_sent:
+                messages.success(request, f'Voter {voter.username} registered successfully! Credentials sent to {voter.email}')
+            else:
+                messages.success(request, f'Voter {voter.username} registered successfully!')
+                if voter.email:
+                    messages.warning(request, f'Could not send email to {voter.email}. Displaying credentials on screen.')
+                else:
+                    messages.warning(request, 'No email address on file. Displaying credentials on screen.')
+            
             return redirect('polls:admin_voter_credentials')
     else:
         form = PoliceUserRegistrationForm(initial={'role': 'VOTER', 'is_active_voter': True})
@@ -509,6 +544,14 @@ def admin_edit_candidate(request, candidate_id):
 @user_passes_test(is_superadmin)
 def admin_delete_candidate(request, candidate_id):
     candidate = get_object_or_404(Candidate, pk=candidate_id)
+    if request.method == 'POST':
+        election_title = candidate.election.title
+        create_audit_log(request.user, AuditLog.ACTION_CANDIDATE_DELETE,
+            f'Deleted candidate: {candidate.name} (Force #{candidate.force_number}) from {election_title}',
+            request, 'Candidate', candidate.id)
+        candidate.delete()
+        messages.success(request, 'Candidate deleted successfully!')
+    return redirect('polls:admin_candidates')
 
 
 @login_required
@@ -533,14 +576,6 @@ def delete_election_position(request, election_id, position_id):
     
     messages.success(request, f'Position "{position.name}" removed from "{election.title}".')
     return redirect('polls:admin_elections')
-
-    if request.method == 'POST':
-        create_audit_log(request.user, AuditLog.ACTION_CANDIDATE_DELETE,
-            f'Deleted candidate: {candidate.name} (Force #{candidate.force_number}) from {candidate.election.title}',
-            request, 'Candidate', candidate.id)
-        candidate.delete()
-        messages.success(request, 'Candidate deleted successfully!')
-    return redirect('polls:admin_candidates')
 
 
 @login_required
@@ -1036,14 +1071,23 @@ def admin_register_voter_to_election(request, election_id, voter_id):
     if ElectionRegistration.objects.filter(voter=voter, election=election).exists():
         messages.info(request, f'Voter {voter.get_full_name()} is already registered for this election.')
         return redirect('polls:admin_election_voters', election_id=election_id)
-    
+
     ElectionRegistration.objects.create(voter=voter, election=election, registered_by=request.user)
     create_audit_log(
         request.user, AuditLog.ACTION_VOTER_UPDATE,
         f'Registered voter {voter.username} for election: {election.title}', request,
         target_model='Election', target_id=election.id
     )
-    messages.success(request, f'Voter {voter.get_full_name()} registered for "{election.title}".')
+    
+    # Attempt to send election invitation email
+    email_sent = send_election_invitation_email(voter, election)
+    if email_sent:
+        messages.success(request, f'Voter {voter.get_full_name()} registered for "{election.title}". Invitation sent to {voter.email}.')
+    else:
+        messages.success(request, f'Voter {voter.get_full_name()} registered for "{election.title}".')
+        if voter.email:
+            messages.warning(request, f'Could not send invitation email to {voter.email}.')
+    
     return redirect('polls:admin_election_voters', election_id=election_id)
 
 
@@ -1069,6 +1113,29 @@ def admin_unregister_voter_from_election(request, election_id, voter_id):
         target_model='Election', target_id=election.id
     )
     messages.success(request, f'Voter {voter.get_full_name()} unregistered from "{election.title}".')
+    return redirect('polls:admin_election_voters', election_id=election_id)
+
+
+@login_required
+@user_passes_test(is_admin)
+def send_election_invitation(request, election_id, voter_id):
+    """Send election invitation email to a voter."""
+    election = get_object_or_404(Election, pk=election_id)
+    voter = get_object_or_404(PoliceUser, pk=voter_id, role='VOTER')
+    
+    if not ElectionRegistration.objects.filter(voter=voter, election=election).exists():
+        messages.error(request, f'Voter {voter.get_full_name()} is not registered for this election.')
+        return redirect('polls:admin_election_voters', election_id=election_id)
+    
+    email_sent = send_election_invitation_email(voter, election)
+    if email_sent:
+        messages.success(request, f'Invitation email sent to {voter.email}')
+    else:
+        if voter.email:
+            messages.error(request, f'Failed to send invitation email to {voter.email}.')
+        else:
+            messages.error(request, f'Voter has no email address.')
+    
     return redirect('polls:admin_election_voters', election_id=election_id)
 
 

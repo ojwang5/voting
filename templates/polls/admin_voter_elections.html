@@ -86,7 +86,12 @@
                                                     <span class="badge bg-secondary">Ended</span>
                                                 {% endif %}
                                             </td>
-                                            <td>
+<td>
+                                                <a href="{% url 'polls:send_election_invitation' election.id voter.id %}" 
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   title="Send Invitation Email">
+                                                    <i class="bi bi-envelope"></i> <span class="d-none d-lg-inline">Invite</span>
+                                                </a>
                                                 <a href="{% url 'polls:admin_unregister_voter_from_election_by_voter' voter.id election.id %}"
                                                    class="btn btn-sm btn-outline-danger"
                                                    onclick="return confirm('Unregister {{ voter.get_full_name }} from {{ election.title }}?')">

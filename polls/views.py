@@ -148,8 +148,26 @@ def password_reset_request(request):
             user.otp_expiry = timezone.now() + timezone.timedelta(minutes=10)
             user.save()
             request.session['password_reset_user_id'] = user.id
-            messages.success(request, f'OTP sent to registered phone. (Demo OTP: {otp})')
+
+            # Send OTP via SMS (Africa's Talking)
+            sms_sent = False
+            if user.phone:
+                from .sms import send_sms
+
+                sms_message = (
+                    f"Your Police Voting System OTP is {otp}. "
+                    f"It expires in 10 minutes."
+                )
+                sms_sent = send_sms(user.phone, sms_message)
+
+            # Demo OTP remains for now (per user request)
+            if sms_sent:
+                messages.success(request, f'OTP sent to registered phone. (Demo OTP: {otp})')
+            else:
+                messages.success(request, f'OTP generated. (Demo OTP: {otp})')
+
             return redirect('polls:password_reset_otp')
+
     else:
         form = PasswordResetForm()
     return render(request, 'registration/password_reset_request.html', {'form': form})

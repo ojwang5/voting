@@ -11,11 +11,18 @@ class PoliceUser(AbstractUser):
     rank = models.CharField(
         max_length=50,
         choices=[
-            ('CONSTABLE', 'Constable'),
-            ('CORPORAL', 'Corporal'),
-            ('SERGEANT', 'Sergeant'),
-            ('INSPECTOR', 'Inspector'),
-            ('ASP', 'Assistant Superintendent of Police'),
+            ('PC', 'PC'),
+            ('CPL', 'CPL'),
+            ('SGT', 'SGT'),
+            ('S/SGT', 'S/SGT'),
+            ('HCM', 'HCM'),
+            ('AIP', 'AIP'),
+            ('IP', 'IP'),
+            ('ASP', 'ASP'),
+            ('SP', 'SP'),
+            ('SSP', 'SSP'),
+            ('ACP', 'ACP'),
+            ('CP', 'CP'),
            
         ]
     )
@@ -178,11 +185,17 @@ class Candidate(models.Model):
     rank = models.CharField(
         max_length=50,
         choices=[
-            ('CONSTABLE', 'Constable'),
-            ('CORPORAL', 'Corporal'),
-            ('SERGEANT', 'Sergeant'),
-            ('INSPECTOR', 'Inspector'),
-            ('ASP', 'Assistant Superintendent of Police'),
+            ('PC', 'PC'),
+            ('CPL', 'CPL'),
+            ('SGT', 'SGT'),
+            ('S/SGT', 'S/SGT'),
+            ('HCM', 'HCM'),
+            ('AIP', 'AIP'),
+            ('IP', 'IP'),
+            ('ASP', 'ASP'),
+            ('SP', 'SP'),
+            ('ACP', 'ACP'),
+            ('CP', 'Cp'),
            
         ]
     )
