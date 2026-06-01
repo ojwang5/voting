@@ -195,7 +195,7 @@ class Candidate(models.Model):
             ('ASP', 'ASP'),
             ('SP', 'SP'),
             ('ACP', 'ACP'),
-            ('CP', 'Cp'),
+            ('CP', 'CP'),
            
         ]
     )

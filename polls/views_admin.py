@@ -26,6 +26,8 @@ from .emails import send_voter_credentials_email, send_election_invitation_email
 
 from .forms import PoliceUserRegistrationForm, PoliceUserEditForm, PositionForm, CandidateForm, BulkVoterUploadForm, AdminChangePasswordForm
 
+from .statistics import get_candidate_pie_stats, render_candidate_pie_chart_png
+
 
 def is_admin(user):
     return user.role in ['SUPER_ADMIN', 'ADMIN']
@@ -33,6 +35,195 @@ def is_admin(user):
 
 def is_superadmin(user):
     return user.role == 'SUPER_ADMIN'
+
+
+@login_required
+@user_passes_test(is_admin)
+def election_statistics(request, election_id):
+    election = get_object_or_404(Election, pk=election_id)
+
+    position_stats, total_votes = get_candidate_pie_stats(election)
+
+    import base64
+    position_charts = {}
+    all_stats = []
+    for position, pos_stats in position_stats.items():
+        all_stats.extend(pos_stats)
+        chart_png = render_candidate_pie_chart_png(pos_stats)
+        if chart_png:
+            position_charts[position] = "data:image/png;base64," + base64.b64encode(chart_png).decode("ascii")
+
+    return render(
+        request,
+        "polls/election_statistics.html",
+        {
+            "election": election,
+            "stats": all_stats,
+            "position_stats": position_stats,
+            "position_charts": position_charts,
+            "total_votes": total_votes,
+        },
+    )
+
+
+@login_required
+@user_passes_test(is_admin)
+def export_election_stats_pdf(request, election_id):
+    election = get_object_or_404(Election, pk=election_id)
+    create_audit_log(
+        request.user,
+        AuditLog.ACTION_EXPORT_RESULTS,
+        f"Exported election statistics for {election.title} as PDF",
+        request,
+        "Election",
+        election.id,
+    )
+
+    position_stats, total_votes = get_candidate_pie_stats(election)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    if election.logo:
+        try:
+            from reportlab.platypus import Image
+            logo_path = election.logo.path
+            logo = Image(logo_path, width=1.5 * Inches, height=0.75 * Inches)
+            logo.hAlign = "CENTER"
+            elements.append(logo)
+            elements.append(Spacer(1, 12))
+        except:
+            pass
+
+    elements.append(Paragraph(f"Election Statistics: {election.title}", styles["Title"]))
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph(f"Total votes cast: {total_votes}", styles["BodyText"]))
+    elements.append(Spacer(1, 12))
+
+    from reportlab.platypus import Image as RLImage
+    from reportlab.lib.utils import ImageReader
+
+    for position, pos_stats in position_stats.items():
+        elements.append(Paragraph(position.name, styles["Heading2"]))
+        chart_png = render_candidate_pie_chart_png(pos_stats)
+        if chart_png:
+            img = ImageReader(io.BytesIO(chart_png))
+            elements.append(RLImage(img, width=360, height=360))
+            elements.append(Spacer(1, 8))
+
+        data = [["Candidate", "Force #", "Votes", "Share"]]
+        for s in pos_stats:
+            try:
+                pct_val = float(getattr(s, "percentage", 0.0))
+            except (TypeError, ValueError):
+                pct_val = 0.0
+            data.append([s.candidate_name, str(s.force_number), str(s.votes), f"{pct_val:.1f}%"])
+
+        t = Table(data, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2563eb")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 9),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+            ("FONTSIZE", (0, 1), (-1, -1), 8),
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 16))
+
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f"attachment; filename=statistics_{election_id}.pdf"
+    response.write(pdf)
+    return response
+
+
+@login_required
+@user_passes_test(is_admin)
+def export_election_stats_docx(request, election_id):
+    election = get_object_or_404(Election, pk=election_id)
+    create_audit_log(
+        request.user,
+        AuditLog.ACTION_EXPORT_RESULTS,
+        f"Exported election statistics for {election.title} as DOCX",
+        request,
+        "Election",
+        election.id,
+    )
+
+    position_stats, total_votes = get_candidate_pie_stats(election)
+
+    doc = Document()
+
+    if election.logo:
+        try:
+            doc.add_picture(election.logo.path, width=Inches(2.5))
+        except:
+            pass
+
+    title = doc.add_heading(f"Election Statistics: {election.title}", level=0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    doc.add_paragraph(f"Total votes cast: {total_votes}")
+    doc.add_paragraph("")
+
+    for position, pos_stats in position_stats.items():
+        doc.add_heading(position.name, level=2)
+        chart_png = render_candidate_pie_chart_png(pos_stats)
+        if chart_png:
+            try:
+                tmp = io.BytesIO(chart_png)
+                doc.add_picture(tmp, width=Inches(4.0))
+            except:
+                pass
+
+        doc.add_paragraph("")
+        table = doc.add_table(rows=1, cols=4)
+        table.style = "Table Grid"
+        hdr_cells = table.rows[0].cells
+        headers = ["Candidate", "Force #", "Votes", "Share"]
+        for i, h in enumerate(headers):
+            hdr_cells[i].text = h
+            for p in hdr_cells[i].paragraphs:
+                for run in p.runs:
+                    run.font.bold = True
+
+        for s in pos_stats:
+            row_cells = table.add_row().cells
+            row_cells[0].text = s.candidate_name
+            row_cells[1].text = str(s.force_number)
+            row_cells[2].text = str(s.votes)
+            row_cells[3].text = f"{s.percentage:.1f}%"
+
+        doc.add_paragraph("")
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.read(),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    response["Content-Disposition"] = f"attachment; filename=statistics_{election_id}.docx"
+    return response
+
+
+
+def auto_assign_elections(voter, registered_by=None):
+    for election in Election.objects.all():
+        if election.is_voter_eligible(voter):
+            ElectionRegistration.objects.get_or_create(
+                voter=voter, election=election,
+                defaults={'registered_by': registered_by}
+            )
 
 
 def create_audit_log(user, action, details, request=None, target_model='', target_id=None):

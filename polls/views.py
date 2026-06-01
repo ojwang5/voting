@@ -149,20 +149,33 @@ def password_reset_request(request):
             user.save()
             request.session['password_reset_user_id'] = user.id
 
-            # Send OTP via SMS (Africa's Talking)
-            sms_sent = False
-            if user.phone:
-                from .sms import send_sms
+            # Send OTP via Email
+            email_sent = False
+            if user.email:
+                from django.core.mail import send_mail
+                from django.conf import settings
 
-                sms_message = (
-                    f"Your Police Voting System OTP is {otp}. "
-                    f"It expires in 10 minutes."
+                subject = "Your Password Reset OTP - Voting System"
+                message = (
+                    f"Hello {user.get_full_name()},\n\n"
+                    f"Your OTP for password reset is: {otp}\n"
+                    f"It expires in 10 minutes.\n\n"
+                    f"If you did not request this, please ignore this email."
                 )
-                sms_sent = send_sms(user.phone, sms_message)
+                try:
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        fail_silently=False,
+                    )
+                    email_sent = True
+                except Exception:
+                    pass
 
-            # Demo OTP remains for now (per user request)
-            if sms_sent:
-                messages.success(request, f'OTP sent to registered phone. (Demo OTP: {otp})')
+            if email_sent:
+                messages.success(request, f'OTP sent to your registered email. (Demo OTP: {otp})')
             else:
                 messages.success(request, f'OTP generated. (Demo OTP: {otp})')
 

@@ -73,6 +73,11 @@ path('admin/elections/<int:election_id>/voters/<int:voter_id>/register/', views_
     path('admin/export/results/<int:election_id>/pdf/', views_admin.export_results_pdf, name='export_results_pdf'),
     path('admin/export/results/<int:election_id>/docx/', views_admin.export_results_docx, name='export_results_docx'),
 
+    path('admin/elections/<int:election_id>/statistics/', views_admin.election_statistics, name='election_statistics'),
+    path('admin/export/elections/<int:election_id>/statistics/pdf/', views_admin.export_election_stats_pdf, name='export_election_stats_pdf'),
+    path('admin/export/elections/<int:election_id>/statistics/docx/', views_admin.export_election_stats_docx, name='export_election_stats_docx'),
+
+
     path('admin/bulk-register-voters/', views_admin.bulk_register_voters, name='bulk_register_voters'),
     path('admin/audit-log/', views_admin.audit_log, name='audit_log'),
 

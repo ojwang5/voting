@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import models
+from django.utils import timezone
 from .models import Election, Candidate, Vote, PoliceUser, AuditLog
 from django.db.models import Q
 from .serializers import ElectionSerializer, VoteSerializer
@@ -14,7 +15,10 @@ class ElectionList(generics.ListAPIView):
     
     def get_queryset(self):
         user = self.request.user
-        return Election.objects.filter(is_active=True).filter(
+        now = timezone.now()
+        return Election.objects.filter(
+            start_time__lte=now, end_time__gte=now
+        ).filter(
             Q(eligible_ranks__isnull=True) | Q(eligible_ranks__icontains=user.rank)
         ).filter(
             Q(eligible_stations__isnull=True) | Q(eligible_stations__icontains=user.station)

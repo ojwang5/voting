@@ -124,10 +124,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Crispy forms (install via requirements.txt)
-# CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
-# CRISPY_TEMPLATE_PACK = 'bootstrap5'
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -156,6 +152,9 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 LOGIN_URL = '/polls/login/'
 LOGIN_REDIRECT_URL = '/polls/'
 LOGOUT_REDIRECT_URL = '/polls/login/'
+
+# Site URL for absolute links in emails
+SITE_URL = os.getenv('SITE_URL', 'http://127.0.0.1:8000')
 
 # Email configuration (using environment variables with sensible defaults)
 # For real-time email, use SMTP backend

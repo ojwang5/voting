@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load poll_extras %}
+
+{% block title %}Election Statistics - {{ election.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-12">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+      <div>
+        <h1 class="h3 mb-1">
+          <i class="bi bi-bar-chart-line me-2 text-primary"></i>Election Statistics
+        </h1>
+        <div class="text-muted small">
+          {{ election.title }} &bull; Total votes cast: <strong>{{ total_votes }}</strong>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
+        <a href="{% url 'polls:admin_elections' %}" class="btn btn-back-dashboard">
+          <i class="bi bi-arrow-left"></i> Back
+        </a>
+        <div class="dropdown">
+          <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-download"></i> Export
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item" href="{% url 'polls:export_election_stats_pdf' election.id %}">
+                <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{% url 'polls:export_election_stats_docx' election.id %}">
+                <i class="bi bi-file-earmark-word me-2"></i>DOCX
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {% for position, chart_url in position_charts.items %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-pie-chart me-2"></i>{{ position.name }}
+        </h5>
+      </div>
+      <div class="card-body text-center">
+        {% if chart_url %}
+          <img src="{{ chart_url }}" alt="{{ position.name }} vote distribution" class="img-fluid" style="max-width:420px;">
+        {% else %}
+          <div class="text-muted py-5">No chart available (no votes yet).</div>
+        {% endif %}
+      </div>
+      <div class="card-footer bg-white p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Candidate</th>
+                <th>Force #</th>
+                <th class="text-end">Votes</th>
+                <th class="text-end">Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in position_stats|dict_key:position %}
+                <tr>
+                  <td>
+                    <strong>{{ item.candidate_name }}</strong>
+                    <div class="text-muted small">{{ item.rank_display }}</div>
+                  </td>
+                  <td>{{ item.force_number }}</td>
+                  <td class="text-end">{{ item.votes }}</td>
+                  <td class="text-end">{{ item.percentage }}%</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-5">No candidates for this position.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="card mb-4">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-inbox display-1 text-muted mb-4"></i>
+        <h4>No statistics to display</h4>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

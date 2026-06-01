@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
-from .models import Election, Candidate, Vote, Position, ElectionPosition
+from polls.models import Election, Candidate, Vote, Position, ElectionPosition
 
 User = get_user_model()
 

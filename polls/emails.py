@@ -26,14 +26,15 @@ def send_voter_credentials_email(voter, password):
         logger.warning(f"Cannot send credentials email to {voter.username} - no email address")
         return False
     
-    subject = "Your Police Voting System Login Credentials"
+    subject = "Your VotingHub Voting System Login Credentials"
 
-    login_url = getattr(settings, 'LOGIN_URL', '/polls/login/')
+    site_url = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
+    login_path = getattr(settings, 'LOGIN_URL', '/polls/login/')
+    login_url = f"{site_url}{login_path}"
 
     message = f"""Hello {voter.get_full_name()},
 
-
-You have been registered as a voter in the Police Voting System.
+You have been registered as a voter in the VotingHub Voting System.
 
 Your login credentials are:
 
@@ -44,15 +45,14 @@ Please login at your earliest and change your password.
 
 Login URL: {login_url}
 
-
 Important:
-
 - Your username is your Force Number: {voter.force_number}
 - You must change your password on first login
+- Forgot your password? Use the "Forgot Password" link on the login page to reset it
 - Contact your administrator if you need assistance
 
 Best regards,
-Police Voting System Administration
+VotingHub System Administration
 """
     
     try:
@@ -70,13 +70,14 @@ Police Voting System Administration
         return False
 
 
-def send_election_invitation_email(voter, election):
+def send_election_invitation_email(voter, election, password=None):
     """
     Send election invitation to a voter.
     
     Args:
         voter: PoliceUser instance
         election: Election instance
+        password: Optional plain text password to include in the email
         
     Returns:
         bool: True if email was sent successfully, False otherwise
@@ -84,6 +85,10 @@ def send_election_invitation_email(voter, election):
     if not voter.email:
         logger.warning(f"Cannot send invitation email to {voter.username} - no email address")
         return False
+    
+    site_url = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
+    login_path = getattr(settings, 'LOGIN_URL', '/polls/login/')
+    login_url = f"{site_url}{login_path}"
     
     subject = f"Invitation: {election.title}"
     
@@ -119,12 +124,25 @@ Eligibility:
         message += f"  Stations: {election.eligible_stations}\n"
     
     message += f"""
+Your login credentials:
+
+Username: {voter.username}
+"""
+    if password:
+        message += f"""Password: {password}
+"""
+    else:
+        message += "Password: (Use the password sent in your registration email)\n"
+    
+    message += f"""
 Please login and cast your vote before the election ends.
 
-Login URL: {getattr(settings, 'LOGIN_URL', '/polls/login/')}
+Login URL: {login_url}
+
+Forgot your password? Use the "Forgot Password" link on the login page to reset it.
 
 Best regards,
- Voting System Administration
+VotingHub System Administration
 """
     
     try:
@@ -159,11 +177,15 @@ def send_bulk_voter_credentials_email(voter, password, election_title=None):
         logger.warning(f"Cannot send bulk credentials email to {voter.username} - no email address")
         return False
     
-    subject = "Your Police Voting System Login Credentials"
+    subject = "Your VotingHub Voting System Login Credentials"
     
+    site_url = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
+    login_path = getattr(settings, 'LOGIN_URL', '/polls/login/')
+    login_url = f"{site_url}{login_path}"
+
     message = f"""Hello {voter.get_full_name()},
 
-You have been registered as a voter in the Police Voting System.
+You have been registered as a voter in the VotingHub Voting System.
 
 Your login credentials are:
 
@@ -177,18 +199,19 @@ Station: {voter.station}
     if election_title:
         message += f"\nYou have been registered to vote in: {election_title}\n"
     
-    message += """
+    message += f"""
 Please login at your earliest and change your password.
 
-Login URL: /polls/login/
+Login URL: {login_url}
 
 Important:
-- Your username is your Force Number
+- Your username is your Force Number: {voter.force_number}
 - You must change your password on first login
+- Forgot your password? Use the "Forgot Password" link on the login page to reset it
 - Contact your administrator if you need assistance
 
 Best regards,
-Police Voting System Administration
+VotingHub System Administration
 """
     
     try:

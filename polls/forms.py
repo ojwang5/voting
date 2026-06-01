@@ -102,17 +102,17 @@ class PoliceUserEditForm(forms.ModelForm):
 
 class PasswordResetForm(forms.Form):
     force_number = forms.CharField(label='Force Number', max_length=50)
-    phone = forms.CharField(label='Registered Phone', max_length=15)
+    email = forms.EmailField(label='Registered Email')
     
     def clean(self):
         cleaned_data = super().clean()
         force_number = cleaned_data.get('force_number')
-        phone = cleaned_data.get('phone')
+        email = cleaned_data.get('email')
         try:
-            user = PoliceUser.objects.get(force_number=force_number, phone=phone)
+            user = PoliceUser.objects.get(force_number=force_number, email=email)
             cleaned_data['user'] = user
         except PoliceUser.DoesNotExist:
-            raise forms.ValidationError('Force number and phone number do not match our records.')
+            raise forms.ValidationError('Force number and email do not match our records.')
         return cleaned_data
 
 class SetNewPasswordForm(forms.Form):
