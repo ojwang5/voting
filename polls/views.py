@@ -175,9 +175,9 @@ def password_reset_request(request):
                     pass
 
             if email_sent:
-                messages.success(request, f'OTP sent to your registered email. (Demo OTP: {otp})')
+                messages.success(request, 'OTP sent to your registered email.')
             else:
-                messages.success(request, f'OTP generated. (Demo OTP: {otp})')
+                messages.success(request, 'OTP sent to your registered email.')
 
             return redirect('polls:password_reset_otp')
 
