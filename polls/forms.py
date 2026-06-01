@@ -39,7 +39,11 @@ class ElectionForm(forms.ModelForm):
     
     class Meta:
         model = Election
+<<<<<<< HEAD
         fields = ['title', 'description', 'start_time', 'end_time', 'eligible_ranks', 'eligible_stations']
+=======
+        fields = ['title', 'description', 'start_time', 'end_time', 'eligible_ranks', 'eligible_stations', 'is_active']
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
         widgets = {
             'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
@@ -72,7 +76,16 @@ class VoteForm(forms.Form):
         self.fields['candidate'].queryset = election.candidates.all()
 
 class PoliceUserRegistrationForm(forms.ModelForm):
+<<<<<<< HEAD
     force_number = forms.CharField(label='Force Number', max_length=50)
+=======
+    force_number = forms.IntegerField(
+        label='Force Number',
+        min_value=62800,
+        max_value=73500,
+        help_text='Valid range: 62800-73500'
+    )
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
     password1 = forms.CharField(label='Password', widget=forms.PasswordInput(), required=False)
     password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput(), required=False)
 
@@ -101,18 +114,32 @@ class PoliceUserEditForm(forms.ModelForm):
         }
 
 class PasswordResetForm(forms.Form):
+<<<<<<< HEAD
     force_number = forms.CharField(label='Force Number', max_length=50)
     email = forms.EmailField(label='Registered Email')
+=======
+    force_number = forms.IntegerField(label='Force Number', min_value=62800, max_value=73500)
+    phone = forms.CharField(label='Registered Phone', max_length=15)
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
     
     def clean(self):
         cleaned_data = super().clean()
         force_number = cleaned_data.get('force_number')
+<<<<<<< HEAD
         email = cleaned_data.get('email')
         try:
             user = PoliceUser.objects.get(force_number=force_number, email=email)
             cleaned_data['user'] = user
         except PoliceUser.DoesNotExist:
             raise forms.ValidationError('Force number and email do not match our records.')
+=======
+        phone = cleaned_data.get('phone')
+        try:
+            user = PoliceUser.objects.get(force_number=force_number, phone=phone)
+            cleaned_data['user'] = user
+        except PoliceUser.DoesNotExist:
+            raise forms.ValidationError('Force number and phone number do not match our records.')
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
         return cleaned_data
 
 class SetNewPasswordForm(forms.Form):
@@ -125,6 +152,7 @@ class SetNewPasswordForm(forms.Form):
             raise forms.ValidationError('Passwords do not match.')
         return cleaned_data
 
+<<<<<<< HEAD
 
 class PhoneLoginForm(forms.Form):
     phone = forms.CharField(label='Registered Phone', max_length=20)
@@ -139,6 +167,8 @@ class PhoneLoginForm(forms.Form):
             raise forms.ValidationError('Only voters may use phone login.')
         return phone
 
+=======
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
 class ChangePasswordForm(forms.Form):
     current_password = forms.CharField(label='Current Password', widget=forms.PasswordInput())
     new_password = forms.CharField(label='New Password', widget=forms.PasswordInput(), min_length=8)
@@ -156,6 +186,7 @@ class ChangePasswordForm(forms.Form):
             raise forms.ValidationError('Current password is incorrect.')
         return cleaned_data
 
+<<<<<<< HEAD
 
 class AdminChangePasswordForm(forms.Form):
     new_password = forms.CharField(
@@ -205,6 +236,12 @@ class CandidateForm(forms.ModelForm):
     class Meta:
         model = Candidate
         fields = ['name', 'force_number', 'rank', 'photo', 'biography', 'election', 'position']
+=======
+class CandidateForm(forms.ModelForm):
+    class Meta:
+        model = Candidate
+        fields = ['name', 'force_number', 'rank', 'photo', 'biography', 'position', 'election']
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
         widgets = {
             'rank': forms.Select(choices=PoliceUser._meta.get_field('rank').choices),
             'biography': forms.Textarea(attrs={'rows': 3}),
@@ -215,8 +252,13 @@ class CandidateForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+<<<<<<< HEAD
         # Set default queryset for position - all positions
         self.fields['position'].queryset = Position.objects.all()
         
         # Ensure election field has proper queryset with positions prefetched
         self.fields['election'].queryset = Election.objects.all().prefetch_related('positions')
+=======
+        if self.instance and self.instance.pk and self.instance.election:
+            self.fields['position'].queryset = self.instance.election.positions.all()
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2

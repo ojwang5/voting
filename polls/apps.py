@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.apps import AppConfig
 
 
@@ -49,3 +50,12 @@ class PollsConfig(AppConfig):
             if not hasattr(self, '_processors_index'):
                 self._processors_index = len(self.dicts)
         RequestContext.__init__ = patched_request_context_init
+=======
+from django.apps import AppConfig
+
+
+class PollsConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'polls'
+
+>>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
