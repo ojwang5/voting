@@ -1,10 +1,7 @@
 # TODO
 
-- [ ] Gather needed repo details for statistics + pie chart + export
-- [ ] Implement candidate vote pie chart module (web page using results data)
-- [ ] Add export endpoints that include the pie chart embedded in DOCX and PDF
-- [ ] Add routes/URLs for the new statistics module and exports
-- [ ] Add frontend template changes (pie chart display)
-- [ ] Add required dependencies if missing (server-side chart rendering)
-- [ ] Run tests / basic sanity checks (python manage.py check, unit tests)
+- [x] Fix syntax error in Django migration file `polls/migrations/0002_alter_candidate_options_remove_election_position_and_more.py` by removing unresolved git merge conflict markers.
+- [x] Fix syntax error in Django migration file `polls/migrations/0001_initial.py` by removing unresolved git merge conflict markers.
+- [ ] Fix syntax error in Django migration file `polls/migrations/0003_alter_policeuser_rank.py` by removing unresolved git merge conflict markers.
+- [ ] Re-run `python manage.py check` and `python manage.py makemigrations --check --dry-run` until migrations import cleanly.
 

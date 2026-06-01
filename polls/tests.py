@@ -2,12 +2,8 @@ from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import get_user_model
-<<<<<<< HEAD
 from django.db import IntegrityError
 from polls.models import Election, Candidate, Vote, Position, ElectionPosition
-=======
-from .models import Election, Candidate, Vote, Position, ElectionPosition
->>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
 
 User = get_user_model()
 
@@ -59,12 +55,8 @@ class ElectionModelTests(TestCase):
 
 class VoteTests(TestCase):
     def setUp(self):
-<<<<<<< HEAD
         self.position1 = Position.objects.create(name='President')
         self.position2 = Position.objects.create(name='Vice President')
-=======
-        self.position = Position.objects.create(name='President')
->>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
         self.admin = User.objects.create_user(
             username='admin', password='testpass123', role='ADMIN',
             force_number=62801, rank='INSPECTOR', station='HQ'
@@ -79,7 +71,6 @@ class VoteTests(TestCase):
             end_time=timezone.now() + timedelta(hours=1),
             created_by=self.admin
         )
-<<<<<<< HEAD
         ElectionPosition.objects.create(election=self.election, position=self.position1)
         ElectionPosition.objects.create(election=self.election, position=self.position2)
         self.candidate1 = Candidate.objects.create(
@@ -103,18 +94,10 @@ class VoteTests(TestCase):
             force_number=62903,
             rank='CONSTABLE',
             position=self.position1,
-=======
-        self.candidate = Candidate.objects.create(
-            name='Test Candidate',
-            force_number=62901,
-            rank='CONSTABLE',
-            position=self.position,
->>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
             election=self.election,
             created_by=self.admin
         )
     
-<<<<<<< HEAD
     def test_user_can_vote_per_position(self):
         """Voter can vote once per position in the same election."""
         Vote.objects.create(
@@ -163,28 +146,6 @@ class VoteTests(TestCase):
             position=self.position2
         )
         self.assertEqual(vote2.position, self.position2)
-=======
-    def test_user_can_vote_once(self):
-        Vote.objects.create(
-            voter=self.voter,
-            election=self.election,
-            candidate=self.candidate
-        )
-        self.assertEqual(Vote.objects.filter(voter=self.voter, election=self.election).count(), 1)
-    
-    def test_user_cannot_vote_twice(self):
-        Vote.objects.create(
-            voter=self.voter,
-            election=self.election,
-            candidate=self.candidate
-        )
-        with self.assertRaises(Exception):
-            Vote.objects.create(
-                voter=self.voter,
-                election=self.election,
-                candidate=self.candidate
-            )
->>>>>>> 61d98cf642d1a084704386fe532514bf25a0c5b2
 
 
 class PositionModelTests(TestCase):
