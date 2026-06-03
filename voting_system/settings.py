@@ -162,27 +162,14 @@ LOGOUT_REDIRECT_URL = '/polls/login/'
 # Site URL for absolute links in emails
 SITE_URL = os.getenv('SITE_URL', 'https://votinghub-79er.onrender.com')
 
-# Email configuration (using environment variables with sensible defaults)
-# For real-time email, use SMTP backend with valid credentials
-# Falls back to console backend when no password is set (safe for dev/testing)
-_email_password = os.getenv('EMAIL_HOST_PASSWORD', '').strip()
-if _email_password:
-    EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.sendgrid.net')
-    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'apikey')
-    EMAIL_HOST_PASSWORD = _email_password
-    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
-    EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', 10))  # Prevent request hangs
-else:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    EMAIL_HOST = 'smtp.sendgrid.net'
-    EMAIL_HOST_PASSWORD = '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'
-    EMAIL_HOST_USER = 'apikey'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_TIMEOUT = 10
-
+# Email configuration
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.sendgrid.net')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'apikey')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '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')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', 10))
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ojwangsamuel1@gmail.com')
 
 # Africa's Talking (SMS)
