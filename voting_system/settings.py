@@ -46,14 +46,13 @@ AUTHENTICATION_BACKENDS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files in production
-    'django.middleware.security.SecurityMiddleware',
 ]
 
 ROOT_URLCONF = 'voting_system.urls'
@@ -161,7 +160,7 @@ LOGIN_REDIRECT_URL = '/polls/'
 LOGOUT_REDIRECT_URL = '/polls/login/'
 
 # Site URL for absolute links in emails
-SITE_URL = os.getenv('SITE_URL', '	https://votinghub-79er.onrender.com/')
+SITE_URL = os.getenv('SITE_URL', 'https://votinghub-79er.onrender.com')
 
 # Email configuration (using environment variables with sensible defaults)
 # For real-time email, use SMTP backend

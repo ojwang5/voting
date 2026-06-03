@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, get_backends
 from django.contrib import messages
 from django.conf import settings
 
@@ -33,6 +33,8 @@ def register(request):
             user.save()
             from .views_admin import auto_assign_elections
             auto_assign_elections(user, registered_by=user)
+            backend = get_backends()[0]
+            user.backend = f"{backend.__module__}.{backend.__class__.__name__}"
             login(request, user)
             messages.success(request, 'Registration successful! Welcome to VotingHub.')
             return redirect('polls:dashboard')
