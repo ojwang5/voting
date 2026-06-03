@@ -177,7 +177,8 @@ def password_reset_request(request):
             if email_sent:
                 messages.success(request, 'OTP sent to your registered email.')
             else:
-                messages.success(request, 'OTP sent to your registered email.')
+                messages.warning(request, 'Could not send email. Your OTP is shown below for now.')
+                messages.info(request, f'Your OTP is: {otp}. It expires in 10 minutes.')
 
             return redirect('polls:password_reset_otp')
 
