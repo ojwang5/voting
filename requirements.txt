@@ -10,4 +10,6 @@ django-widget-tweaks==1.5.1
 python-docx==1.1.2
 openpyxl==3.1.5
 django-anymail==11.1
+gunicorn
+whitenoise
 
