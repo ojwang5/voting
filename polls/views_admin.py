@@ -12,15 +12,6 @@ import secrets
 import string
 from .models import Position, Candidate, PoliceUser, Election, Vote, ElectionPosition, AuditLog, ElectionRegistration
 
-# PDF / DOCX helpers
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-
 # Email helpers
 from .emails import send_voter_credentials_email, send_election_invitation_email, send_bulk_voter_credentials_email
 
@@ -65,6 +56,11 @@ def election_statistics(request, election_id):
 @login_required
 @user_passes_test(is_admin)
 def export_election_stats_pdf(request, election_id):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
     election = get_object_or_404(Election, pk=election_id)
     create_audit_log(
         request.user,
@@ -86,7 +82,7 @@ def export_election_stats_pdf(request, election_id):
         try:
             from reportlab.platypus import Image
             logo_path = election.logo.path
-            logo = Image(logo_path, width=1.5 * Inches, height=0.75 * Inches)
+            logo = Image(logo_path, width=1.5 * inch, height=0.75 * inch)
             logo.hAlign = "CENTER"
             elements.append(logo)
             elements.append(Spacer(1, 12))
@@ -143,6 +139,9 @@ def export_election_stats_pdf(request, election_id):
 @login_required
 @user_passes_test(is_admin)
 def export_election_stats_docx(request, election_id):
+    from docx import Document
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
     election = get_object_or_404(Election, pk=election_id)
     create_audit_log(
         request.user,
@@ -805,6 +804,10 @@ def export_voters_csv(request):
 @login_required
 @user_passes_test(is_admin)
 def export_voters_pdf(request):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_VOTERS, 'Exported voters as PDF', request)
     voters = PoliceUser.objects.filter(role='VOTER').order_by('force_number')
     buffer = io.BytesIO()
@@ -841,6 +844,9 @@ def export_voters_pdf(request):
 @login_required
 @user_passes_test(is_admin)
 def export_voters_docx(request):
+    from docx import Document
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_VOTERS, 'Exported voters as DOCX', request)
     voters = PoliceUser.objects.filter(role='VOTER').order_by('force_number')
     doc = Document()
@@ -889,6 +895,10 @@ def export_candidates_csv(request):
 @login_required
 @user_passes_test(is_admin)
 def export_candidates_pdf(request):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_CANDIDATES, 'Exported candidates as PDF', request)
     candidates = Candidate.objects.all().select_related('election', 'position').order_by('position__name', 'name')
     buffer = io.BytesIO()
@@ -924,6 +934,9 @@ def export_candidates_pdf(request):
 @login_required
 @user_passes_test(is_admin)
 def export_candidates_docx(request):
+    from docx import Document
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_CANDIDATES, 'Exported candidates as DOCX', request)
     candidates = Candidate.objects.all().select_related('election', 'position').order_by('position__name', 'name')
     doc = Document()
@@ -974,6 +987,11 @@ def export_results_csv(request, election_id):
 @login_required
 @user_passes_test(is_admin)
 def export_results_pdf(request, election_id):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
     election = get_object_or_404(Election.objects.prefetch_related('positions'), pk=election_id)
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_RESULTS,
         f'Exported results for election: {election.title} (ID: {election.id}) as PDF', request, 'Election', election.id)
@@ -986,7 +1004,7 @@ def export_results_pdf(request, election_id):
         try:
             from reportlab.platypus import Image
             logo_path = election.logo.path
-            logo = Image(logo_path, width=1.5*Inches, height=0.75*Inches)
+            logo = Image(logo_path, width=1.5*inch, height=0.75*inch)
             logo.hAlign = 'CENTER'
             elements.append(logo)
             elements.append(Spacer(1, 12))
@@ -1033,6 +1051,9 @@ def export_results_pdf(request, election_id):
 @login_required
 @user_passes_test(is_admin)
 def export_results_docx(request, election_id):
+    from docx import Document
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
     election = get_object_or_404(Election.objects.prefetch_related('positions'), pk=election_id)
     create_audit_log(request.user, AuditLog.ACTION_EXPORT_RESULTS,
         f'Exported results for election: {election.title} (ID: {election.id}) as DOCX', request, 'Election', election.id)

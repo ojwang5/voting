@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: votinghub
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn voting_system.wsgi --workers 1 --worker-class sync --timeout 120 --max-requests 200 --max-requests-jitter 50 --access-logfile - --error-logfile - --log-level info
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: voting_system.settings
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        value: ojwangsamuel1@gmail.com

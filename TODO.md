@@ -6,6 +6,8 @@
 - [x] Admin voter registration now processes election checkboxes and auto-assigns voters to eligible elections.
 - [x] Registration template now receives `upcoming_elections` context variable.
 - [x] Email configuration fixed: uses SendGrid SMTP via `SENDGRID_API_KEY` environment variable.
+- [x] Procfile added: single gunicorn worker with threads (fixes OOM SIGKILL on Render free tier).
+- [x] render.yaml added: explicit deployment config with environment variables.
 
 ## Email Setup for Production (SendGrid on Render.com)
 
