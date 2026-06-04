@@ -26,7 +26,7 @@ def get_candidate_pie_stats(election: Election) -> Tuple[Dict[Position, List[Can
 
     qs = (
         election.candidates.select_related("position")
-        .annotate(votes=Count("vote"))
+        .annotate(votes=Count("vote_set"))
         .order_by("position__id", "name")
     )
 

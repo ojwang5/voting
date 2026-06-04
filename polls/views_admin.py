@@ -449,10 +449,31 @@ def admin_register_voter(request):
             create_audit_log(request.user, AuditLog.ACTION_VOTER_CREATE,
                 f'Registered voter: {voter.username} (Force #{voter.force_number})', request, 'PoliceUser', voter.id)
             
-            # Store credentials in session and attempt to send email
+            # Register voter for selected elections
+            assigned_elections = []
+            selected_election_ids = request.POST.getlist('elections')
+            if selected_election_ids:
+                for eid in selected_election_ids:
+                    try:
+                        election = Election.objects.get(id=eid)
+                        ElectionRegistration.objects.get_or_create(
+                            voter=voter, election=election,
+                            defaults={'registered_by': request.user}
+                        )
+                        assigned_elections.append(election.title)
+                    except Election.DoesNotExist:
+                        pass
+            else:
+                auto_assign_elections(voter, registered_by=request.user)
+                assigned_count = ElectionRegistration.objects.filter(voter=voter).count()
+                if assigned_count:
+                    assigned_elections = [f'{assigned_count} election(s)']
+            
+            # Store credentials and election info in session
             request.session['registered_voter_credentials'] = {
                 'username': voter.username, 'password': auto_password,
-                'force_number': voter.force_number, 'full_name': voter.get_full_name()
+                'force_number': voter.force_number, 'full_name': voter.get_full_name(),
+                'assigned_elections': ', '.join(assigned_elections) if assigned_elections else None
             }
             
             # Attempt to send credentials email
@@ -470,7 +491,11 @@ def admin_register_voter(request):
     else:
         form = PoliceUserRegistrationForm(initial={'role': 'VOTER', 'is_active_voter': True})
         form.fields['role'].disabled = True
-    return render(request, 'polls/register_voter.html', {'form': form, 'title': 'Register New Voter'})
+    upcoming_elections = Election.objects.filter(start_time__gt=timezone.now()).prefetch_related('positions').order_by('start_time')
+    return render(request, 'polls/register_voter.html', {
+        'form': form, 'title': 'Register New Voter',
+        'upcoming_elections': upcoming_elections
+    })
 
 @login_required
 @user_passes_test(is_admin)

@@ -162,15 +162,35 @@ LOGOUT_REDIRECT_URL = '/polls/login/'
 # Site URL for absolute links in emails
 SITE_URL = os.getenv('SITE_URL', 'https://votinghub-79er.onrender.com')
 
-# Email configuration
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.sendgrid.net')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'apikey')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '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')
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
-EMAIL_TIMEOUT = int(os.getenv('EMAIL_TIMEOUT', 10))
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ojwangsamuel1@gmail.com')
+# Email configuration (SendGrid SMTP)
+# ---------------------------------------------------------------------------
+# Production: Set these environment variables on Render.com:
+#   SENDGRID_API_KEY  = your SendGrid API key (starts with "SG.")
+#   DEFAULT_FROM_EMAIL = a verified sender in your SendGrid account
+# 
+# How to get a SendGrid API key:
+#   1. Sign up at https://sendgrid.com (free: 100 emails/day forever)
+#   2. Go to Settings > API Keys > Create API Key (Full Access)
+#   3. Copy the key (starts with "SG.") and set as SENDGRID_API_KEY
+#   4. Go to Settings > Sender Authentication > verify a single sender
+#      (use the same email you set as DEFAULT_FROM_EMAIL)
+#
+# Development: Set no env vars — falls back to console backend (prints to terminal)
+# ---------------------------------------------------------------------------
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
+
+if SENDGRID_API_KEY:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.sendgrid.net'
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = 'apikey'
+    EMAIL_HOST_PASSWORD = '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'
+    EMAIL_USE_TLS = True
+    EMAIL_TIMEOUT = 10
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ojwangsamuel1@gmail.com')
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'ojwangsamuel1@gmail.com'
 
 # Africa's Talking (SMS)
 # Set via environment variables. Keep empty to disable SMS sending safely.
